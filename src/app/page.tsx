@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, PersonStanding } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
-import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export type ServiceState = 'IDLE' | 'SEARCHING' | 'PROVIDER_EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED';
@@ -59,6 +59,7 @@ export default function Home() {
 
   // Centralized real-time listener for all open delivery requests
   useEffect(() => {
+    // Query for searching requests. We will sort them on the client-side.
     const q = query(
       collection(db, "deliveryRequests"), 
       where("status", "==", "SEARCHING")
@@ -80,8 +81,8 @@ export default function Home() {
         });
       });
       // Newest requests will appear first.
-      requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setDeliveryRequests(requests);
+      const sortedRequests = requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setDeliveryRequests(sortedRequests);
       setIsFetchingDeliveries(false);
     }, (error) => {
         console.error("Error fetching real-time delivery requests: ", error);
