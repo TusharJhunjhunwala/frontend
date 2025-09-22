@@ -28,18 +28,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch, ShieldCheck, History, Phone, MessageSquare, ChevronLeft } from 'lucide-react';
+import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch, ChevronLeft } from 'lucide-react';
 import type { ServiceState, Provider, RideRequestData, DeliveryRequestData } from '@/app/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { CampusMap } from './campus-map';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+
 
 type RidePanelProps = {
   serviceState: ServiceState;
@@ -55,8 +57,6 @@ type RidePanelProps = {
   setActiveTab: (tab: string) => void;
   showStatusScreen: boolean;
   setShowStatusScreen: (show: boolean) => void;
-  deliveryRequests: DeliveryRequest[];
-  isFetchingDeliveries: boolean;
   isAgentOnline: boolean;
   setIsAgentOnline: (isOnline: boolean) => void;
 };
@@ -257,11 +257,12 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
     )
 }
 
-function AgentAcceptedView({ onComplete }: { onComplete: () => void }) {
+function AgentAcceptedView({ onComplete, request }: { onComplete: () => void, request: DeliveryRequest }) {
+  // In a real app, requester details would be fetched based on a userId stored in the request
   const requester = {
     name: 'Aarav Sharma',
     phone: '9876543210',
-    block: 'Q Block',
+    block: request.deliverTo,
   };
 
   return (
@@ -273,28 +274,27 @@ function AgentAcceptedView({ onComplete }: { onComplete: () => void }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Requester Details</CardTitle>
+          <CardTitle className="text-lg">Delivery Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Name</span>
-            <span className="font-medium">{requester.name}</span>
+            <span className="text-muted-foreground">Item</span>
+            <span className="font-medium">{request.item}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Phone</span>
-            <span className="font-medium">{requester.phone}</span>
+            <span className="text-muted-foreground">From</span>
+            <span className="font-medium">{request.pickupPoint}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Block</span>
-            <span className="font-medium">{requester.block}</span>
+            <span className="text-muted-foreground">To</span>
+            <span className="font-medium">{request.deliverTo}</span>
+          </div>
+           <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Fee</span>
+            <span className="font-bold">₹{request.offerFee}</span>
           </div>
         </CardContent>
       </Card>
-
-      <div className="grid grid-cols-1 gap-4">
-        <Button variant="outline"><Phone className="mr-2" /> Call Requester</Button>
-        <Button><MessageSquare className="mr-2" /> Chat with Requester</Button>
-      </div>
       
       <Button className="w-full" onClick={onComplete}>Mark as Completed</Button>
     </div>
@@ -302,17 +302,62 @@ function AgentAcceptedView({ onComplete }: { onComplete: () => void }) {
 }
 
 
-function AgentView({ deliveryRequests, isFetchingDeliveries, isAgentOnline, setIsAgentOnline }: Pick<RidePanelProps, 'deliveryRequests' | 'isFetchingDeliveries' | 'isAgentOnline' | 'setIsAgentOnline'>) {
+function AgentView({ isAgentOnline, setIsAgentOnline }: Pick<RidePanelProps, 'isAgentOnline' | 'setIsAgentOnline'>) {
   const [acceptedJob, setAcceptedJob] = useState<DeliveryRequest | null>(null);
+  const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
+  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isAgentOnline) {
+      setDeliveryRequests([]);
+      setIsFetchingDeliveries(false);
+      return () => {};
+    }
+
+    setIsFetchingDeliveries(true);
+    const q = query(collection(db, "deliveryRequests"), where("status", "==", "SEARCHING"));
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const requests: DeliveryRequest[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        requests.push({
+          id: doc.id,
+          pickupPoint: data.pickupPoint,
+          item: data.item,
+          deliverTo: data.deliverTo,
+          offerFee: data.offerFee,
+          paymentMethod: data.paymentMethod,
+          status: data.status,
+          createdAt: data.createdAt,
+        });
+      });
+      setDeliveryRequests(requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setIsFetchingDeliveries(false);
+    }, (error) => {
+        console.error("Error fetching real-time delivery requests: ", error);
+        toast({
+          variant: 'destructive',
+          title: 'Real-time Error',
+          description: 'Could not fetch delivery updates.',
+        });
+        setIsFetchingDeliveries(false);
+    });
+
+    return () => unsubscribe();
+  }, [isAgentOnline, toast]);
+
 
   const handleAcceptJob = async (req: DeliveryRequest) => {
     try {
       const deliveryRef = doc(db, 'deliveryRequests', req.id);
-      await updateDoc(deliveryRef, { status: 'AGENT_ASSIGNED' });
+      // In a real app, you'd also assign an agentId here
+      await updateDoc(deliveryRef, { status: 'AGENT_ASSIGNED' }); 
       setAcceptedJob(req);
     } catch (error) {
         console.error("Error accepting job: ", error);
-        // Optionally, show a toast to the agent
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not accept the job.' });
     }
   }
   
@@ -321,14 +366,16 @@ function AgentView({ deliveryRequests, isFetchingDeliveries, isAgentOnline, setI
     try {
       const deliveryRef = doc(db, 'deliveryRequests', acceptedJob.id);
       await updateDoc(deliveryRef, { status: 'COMPLETED' });
-      setAcceptedJob(null);
+      setAcceptedJob(null); // Return to the list of open requests
+      toast({ title: 'Success', description: 'Delivery marked as complete.' });
     } catch (error) {
         console.error("Error completing job: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not complete the job.' });
     }
   }
 
   if (acceptedJob) {
-    return <AgentAcceptedView onComplete={handleCompleteJob} />;
+    return <AgentAcceptedView onComplete={handleCompleteJob} request={acceptedJob} />;
   }
 
 
@@ -336,43 +383,22 @@ function AgentView({ deliveryRequests, isFetchingDeliveries, isAgentOnline, setI
     <div className="space-y-6">
       <div>
         <h3 className="text-xl font-bold">Agent Dashboard</h3>
-        <p className="text-muted-foreground text-sm">Manage your availability and view your delivery history.</p>
+        <p className="text-muted-foreground text-sm">Manage your availability and view delivery requests.</p>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center gap-3 space-y-0">
-          <ShieldCheck className="w-5 h-5 text-green-500" />
-          <CardTitle className="text-lg">Verification Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="font-semibold text-green-500">Verified</p>
-          <p className="text-sm text-muted-foreground">Your account is verified. You are ready to accept deliveries.</p>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
+        <CardHeader>
             <CardTitle className="text-lg">Go Online</CardTitle>
             <CardDescription>Toggle this switch to start or stop receiving delivery requests.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        </CardHeader>
+        <CardContent>
             <div className="flex items-center space-x-2 rounded-lg border p-3">
               <Switch id="online-status" checked={isAgentOnline} onCheckedChange={setIsAgentOnline} />
               <Label htmlFor="online-status" className="flex-grow">{isAgentOnline ? 'You are Online' : 'You are Offline'}</Label>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button className="w-full justify-start"><History className="mr-2"/>View Delivery History</Button>
-          </CardContent>
-        </Card>
-      </div>
-
+        </CardContent>
+      </Card>
+      
       {isAgentOnline && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">

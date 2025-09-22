@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, PersonStanding } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
-import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export type ServiceState = 'IDLE' | 'SEARCHING' | 'PROVIDER_EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED';
@@ -39,7 +39,7 @@ export type RideRequestData = {
 export type DeliveryRequestData = {
   pickupPoint: string;
   item: string;
-  deliverTo: string;
+  deliverTo:string;
   offerFee: string;
 };
 
@@ -53,53 +53,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('transit');
   const [currentDeliveryId, setCurrentDeliveryId] = useState<string | null>(null);
   const [showStatusScreen, setShowStatusScreen] = useState(false);
-  const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
-  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(true);
   const [isAgentOnline, setIsAgentOnline] = useState(false);
-
-
-  // Real-time listener for open delivery requests
-  useEffect(() => {
-    // Only listen if the agent has toggled themselves online
-    if (!isAgentOnline) {
-      setDeliveryRequests([]);
-      setIsFetchingDeliveries(false);
-      return;
-    }
-
-    setIsFetchingDeliveries(true);
-    const q = query(collection(db, "deliveryRequests"), where("status", "==", "SEARCHING"));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const requests: DeliveryRequest[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        requests.push({
-          id: doc.id,
-          pickupPoint: data.pickupPoint,
-          item: data.item,
-          deliverTo: data.deliverTo,
-          offerFee: data.offerFee,
-          paymentMethod: data.paymentMethod,
-          status: data.status,
-          createdAt: data.createdAt,
-        });
-      });
-      setDeliveryRequests(requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setIsFetchingDeliveries(false);
-    }, (error) => {
-        console.error("Error fetching real-time delivery requests: ", error);
-        toast({
-          variant: 'destructive',
-          title: 'Real-time Error',
-          description: 'Could not fetch delivery updates.',
-        });
-        setIsFetchingDeliveries(false);
-    });
-
-    // Cleanup subscription on component unmount or when agent goes offline
-    return () => unsubscribe();
-  }, [isAgentOnline, toast]);
 
 
   useEffect(() => {
@@ -257,8 +211,6 @@ export default function Home() {
               setActiveTab={setActiveTab}
               showStatusScreen={showStatusScreen}
               setShowStatusScreen={setShowStatusScreen}
-              deliveryRequests={deliveryRequests}
-              isFetchingDeliveries={isFetchingDeliveries}
               isAgentOnline={isAgentOnline}
               setIsAgentOnline={setIsAgentOnline}
             />
