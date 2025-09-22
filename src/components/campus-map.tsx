@@ -11,7 +11,6 @@ const locations = [
   { name: 'Technology Tower', x: 45, y: 80, type: 'stop' },
   { name: "Ladies Hostel", x: 85, y: 85, type: 'stop' },
   { name: 'Food Court', x: 55, y: 20, type: 'poi' },
-  { name: 'Gulmohar', x: 65, y: 40, type: 'poi' },
 ];
 
 const vehicles = [
