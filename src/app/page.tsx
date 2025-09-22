@@ -19,11 +19,11 @@ export type Driver = {
 };
 
 const MOCK_DRIVER: Driver = {
-  name: 'John D.',
+  name: 'Ramesh K.',
   avatarUrl: PlaceHolderImages.find(img => img.id === 'driver-avatar')?.imageUrl || '',
-  rating: 4.9,
-  vehicle: 'Toyota Prius',
-  licensePlate: 'STREAM',
+  rating: 4.8,
+  vehicle: 'Auto Rickshaw',
+  licensePlate: 'VIT-AUTO',
 };
 
 export type RideRequestData = {
@@ -64,7 +64,7 @@ export default function Home() {
     setDestination(data.destination);
     try {
       const result = await predictDestinationETA({
-        currentLocation: '34.0522° N, 118.2437° W (Downtown Los Angeles)',
+        currentLocation: 'VIT Vellore Main Gate',
         destination: data.destination,
         trafficConditions: data.traffic,
       });

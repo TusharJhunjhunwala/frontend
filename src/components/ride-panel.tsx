@@ -28,8 +28,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, MapPin, Star, Clock, CheckCircle } from 'lucide-react';
+import { Loader2, MapPin, Star, Clock, CheckCircle, ShoppingCart } from 'lucide-react';
 import type { RideState, Driver, RideRequestData } from '@/app/page';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type RidePanelProps = {
   rideState: RideState;
@@ -49,7 +50,12 @@ const rideRequestSchema = z.object({
   }),
 });
 
-function RideRequestView({ onRequestRide, isSubmitting }: Pick<RidePanelProps, 'onRequestRide' | 'isSubmitting'>) {
+const deliveryRequestSchema = z.object({
+  restaurant: z.string().min(3, { message: 'Please enter a restaurant.' }),
+  item: z.string().min(3, { message: 'Please enter an item to deliver.' }),
+});
+
+function RideRequestForm({ onRequestRide, isSubmitting }: Pick<RidePanelProps, 'onRequestRide' | 'isSubmitting'>) {
   const form = useForm<z.infer<typeof rideRequestSchema>>({
     resolver: zodResolver(rideRequestSchema),
     defaultValues: { destination: '', traffic: 'moderate' },
@@ -61,58 +67,125 @@ function RideRequestView({ onRequestRide, isSubmitting }: Pick<RidePanelProps, '
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <CardHeader>
-          <CardTitle className="font-headline text-2xl">Where to?</CardTitle>
-          <CardDescription>Enter your destination to get a ride.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <FormField
-            control={form.control}
-            name="destination"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Destination</FormLabel>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+        <FormField
+          control={form.control}
+          name="destination"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Destination</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., Silver Jubilee Tower" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="traffic"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Current Campus Traffic</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <Input placeholder="e.g., Grand Park" {...field} />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select traffic conditions" />
+                  </SelectTrigger>
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="traffic"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Current Traffic</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select traffic conditions" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="moderate">Moderate</SelectItem>
-                    <SelectItem value="heavy">Heavy</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Request Streamline
-          </Button>
-        </CardFooter>
+                <SelectContent>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="moderate">Moderate</SelectItem>
+                  <SelectItem value="heavy">Heavy</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Request Transit
+        </Button>
       </form>
     </Form>
   );
 }
+
+function DeliveryRequestForm({ isSubmitting }: Pick<RidePanelProps, 'isSubmitting'>) {
+    const form = useForm<z.infer<typeof deliveryRequestSchema>>({
+        resolver: zodResolver(deliveryRequestSchema),
+        defaultValues: { restaurant: '', item: '' },
+    });
+
+    function onSubmit(data: z.infer<typeof deliveryRequestSchema>) {
+        // Placeholder for delivery request logic
+        console.log("Delivery requested:", data);
+    }
+
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+                <FormField
+                    control={form.control}
+                    name="restaurant"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Restaurant / Shop</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g., Foodys" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="item"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Item to Deliver</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g., Chicken Biryani" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Find a Deliverer
+                </Button>
+            </form>
+        </Form>
+    )
+}
+
+function RequestView(props: Pick<RidePanelProps, 'onRequestRide' | 'isSubmitting'>) {
+  return (
+    <>
+      <CardHeader>
+        <CardTitle className="font-headline text-2xl">How can we help?</CardTitle>
+        <CardDescription>Book a ride or get something delivered.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="transit" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="transit">Transit</TabsTrigger>
+                <TabsTrigger value="delivery">Delivery</TabsTrigger>
+            </TabsList>
+            <TabsContent value="transit">
+                <RideRequestForm {...props} />
+            </TabsContent>
+            <TabsContent value="delivery">
+                <DeliveryRequestForm {...props} />
+            </TabsContent>
+        </Tabs>
+      </CardContent>
+    </>
+  );
+}
+
 
 function SearchingView({ onCancel }: Pick<RidePanelProps, 'onCancel'>) {
   return (
@@ -173,7 +246,7 @@ function InProgressView({ destination, eta }: Pick<RidePanelProps, 'destination'
             <CardContent className="text-center">
                 <p className="text-muted-foreground">Estimated arrival in</p>
                 <p className="text-4xl font-bold font-headline text-primary">{eta} min</p>
-                <p className="text-sm text-muted-foreground mt-2">(Predicted by Streamline AI)</p>
+                <p className="text-sm text-muted-foreground mt-2">(Predicted by VITransit AI)</p>
             </CardContent>
         </>
     )
@@ -185,13 +258,13 @@ function CompletedView({ onReset }: Pick<RidePanelProps, 'onReset'>) {
             <CardHeader className="items-center text-center">
                 <CheckCircle className="w-12 h-12 text-green-500" />
                 <CardTitle className="font-headline mt-4">You've Arrived!</CardTitle>
-                <CardDescription>Thank you for riding with Streamline.</CardDescription>
+                <CardDescription>Thank you for using VITransit.</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-                 <p className="text-sm text-muted-foreground">A receipt has been sent to your email.</p>
+                 <p className="text-sm text-muted-foreground">We hope you had a pleasant journey.</p>
             </CardContent>
             <CardFooter>
-                <Button className="w-full" onClick={onReset}>Ride Again</Button>
+                <Button className="w-full" onClick={onReset}>New Request</Button>
             </CardFooter>
         </>
     )
@@ -201,7 +274,7 @@ export function RidePanel(props: RidePanelProps) {
   return (
     <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
       <Card className="max-w-md mx-auto shadow-2xl">
-        {props.rideState === 'IDLE' && <RideRequestView {...props} />}
+        {props.rideState === 'IDLE' && <RequestView {...props} />}
         {props.rideState === 'SEARCHING' && <SearchingView {...props} />}
         {props.rideState === 'DRIVER_EN_ROUTE' && <DriverEnRouteView {...props} />}
         {props.rideState === 'IN_PROGRESS' && <InProgressView {...props} />}

@@ -9,7 +9,7 @@ export function AppHeader() {
             <CarIcon className="w-6 h-6 text-primary-foreground" />
         </div>
         <span className="text-2xl font-bold tracking-tighter text-foreground font-headline">
-          Streamline
+          VITransit
         </span>
       </Link>
     </header>

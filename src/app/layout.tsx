@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'Streamline',
-  description: 'Request a ride, track your driver, and pay seamlessly. Your destination is just a tap away.',
+  title: 'VITransit',
+  description: 'Track shuttles, book autos, and get peer-to-peer deliveries on campus.',
 };
 
 export default function RootLayout({
