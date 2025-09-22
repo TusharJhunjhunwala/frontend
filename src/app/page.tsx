@@ -55,12 +55,15 @@ export default function Home() {
   const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
   const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false);
   const [currentDeliveryId, setCurrentDeliveryId] = useState<string | null>(null);
+  const [showStatusScreen, setShowStatusScreen] = useState(false);
+
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
     // Only simulate ride-hailing flow for transit, not delivery
     if (activeTab === 'transit') {
       if (serviceState === 'SEARCHING') {
+        setShowStatusScreen(true);
         // Simulate an agent accepting after 4 seconds for rides.
         timer = setTimeout(() => {
           setProvider(MOCK_PROVIDER);
@@ -123,6 +126,7 @@ export default function Home() {
     setDestination(data.deliverTo);
     setEta("~15-20"); // Set a placeholder ETA
     setServiceState('SEARCHING'); 
+    setShowStatusScreen(true);
 
     // Then, run the backend call in the background.
     try {
@@ -137,9 +141,7 @@ export default function Home() {
         description: 'Could not save your request. Please try again.',
       });
       // If the backend call fails, revert the state back to IDLE so the user can try again.
-      setServiceState('IDLE');
-      setDestination('');
-      setEta(null);
+      handleCancel();
     }
   };
 
@@ -168,6 +170,7 @@ export default function Home() {
     setEta(null);
     setProvider(null);
     setCurrentDeliveryId(null);
+    setShowStatusScreen(false);
   };
   
   const handleReset = () => {
@@ -228,6 +231,8 @@ export default function Home() {
               deliveryRequests={deliveryRequests}
               isFetchingDeliveries={isFetchingDeliveries}
               onFetchDeliveries={handleFetchDeliveries}
+              showStatusScreen={showStatusScreen}
+              setShowStatusScreen={setShowStatusScreen}
             />
           </div>
         </div>
@@ -244,5 +249,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

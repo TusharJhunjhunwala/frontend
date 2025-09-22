@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch, ShieldCheck, History, Phone, MessageSquare } from 'lucide-react';
+import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch, ShieldCheck, History, Phone, MessageSquare, ChevronLeft } from 'lucide-react';
 import type { ServiceState, Provider, RideRequestData, DeliveryRequestData } from '@/app/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -54,6 +54,8 @@ type RidePanelProps = {
   deliveryRequests: DeliveryRequest[];
   isFetchingDeliveries: boolean;
   onFetchDeliveries: () => void;
+  showStatusScreen: boolean;
+  setShowStatusScreen: (show: boolean) => void;
 };
 
 const rideRequestSchema = z.object({
@@ -433,7 +435,16 @@ function DeliveryView(props: RidePanelProps) {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="request" className="pt-4">
-        <DeliveryRequestForm {...props} />
+        {props.serviceState === 'SEARCHING' || props.serviceState === 'PROVIDER_EN_ROUTE' ? (
+          <div className="text-center space-y-4 py-4">
+            <p className="text-muted-foreground">Your delivery request is being processed.</p>
+            <Button onClick={() => props.setShowStatusScreen(true)}>
+              View Status
+            </Button>
+          </div>
+        ) : (
+          <DeliveryRequestForm {...props} />
+        )}
       </TabsContent>
       <TabsContent value="agent" className="pt-4">
         <AgentView {...props} />
@@ -469,7 +480,7 @@ function RequestView(props: RidePanelProps) {
 }
 
 
-function SearchingView({ onCancel, activeTab }: Pick<RidePanelProps, 'onCancel' | 'activeTab'>) {
+function SearchingView({ onCancel, onBack, activeTab }: { onCancel: () => void; onBack: () => void; activeTab: string; }) {
   const titleText = activeTab === 'delivery' ? 'Finding a Deliverer' : 'Finding Your Ride';
   const descriptionText = activeTab === 'delivery' ? 'Please wait while we find an agent for your delivery.' : 'Please wait while we connect you to a driver.';
 
@@ -481,10 +492,16 @@ function SearchingView({ onCancel, activeTab }: Pick<RidePanelProps, 'onCancel' 
         <CardTitle className="font-headline mt-4">{titleText}</CardTitle>
         <CardDescription>{descriptionText}</CardDescription>
       </CardHeader>
-      <CardFooter>
+      <CardFooter className="flex-col gap-2">
         <Button variant="outline" className="w-full" onClick={onCancel}>
           Cancel Search
         </Button>
+        {activeTab === 'delivery' && (
+          <Button variant="ghost" className="w-full" onClick={onBack}>
+            <ChevronLeft className="mr-2" />
+            Back
+          </Button>
+        )}
       </CardFooter>
     </>
   );
@@ -576,23 +593,31 @@ function CompletedView({ onReset, activeTab }: Pick<RidePanelProps, 'onReset' | 
 }
 
 export function RidePanel(props: RidePanelProps) {
-  const { serviceState, provider, destination, eta, onCancel, onReset, activeTab } = props;
+  const { serviceState, provider, destination, eta, onCancel, onReset, activeTab, showStatusScreen, setShowStatusScreen } = props;
 
   const renderContent = () => {
-    switch (serviceState) {
-      case 'IDLE':
-        return <RequestView {...props} />;
-      case 'SEARCHING':
-        return <SearchingView onCancel={onCancel} activeTab={activeTab} />;
-      case 'PROVIDER_EN_ROUTE':
-        return <ProviderEnRouteView provider={provider} onCancel={onCancel} activeTab={activeTab} />;
-      case 'IN_PROGRESS':
-        return <InProgressView destination={destination} eta={eta} activeTab={activeTab} />;
-      case 'COMPLETED':
-        return <CompletedView onReset={onReset} activeTab={activeTab} />;
-      default:
-        return <RequestView {...props} />;
+    if (!showStatusScreen && serviceState === 'IDLE') {
+       return <RequestView {...props} />;
     }
+    
+    // This allows showing the status screen (`Searching`, `In Progress`, etc.)
+    // while still allowing the user to navigate back to the request form
+    if (showStatusScreen || serviceState !== 'IDLE') {
+        switch (serviceState) {
+          case 'SEARCHING':
+            return <SearchingView onCancel={onCancel} onBack={() => setShowStatusScreen(false)} activeTab={activeTab} />;
+          case 'PROVIDER_EN_ROUTE':
+            return <ProviderEnRouteView provider={provider} onCancel={onCancel} activeTab={activeTab} />;
+          case 'IN_PROGRESS':
+            return <InProgressView destination={destination} eta={eta} activeTab={activeTab} />;
+          case 'COMPLETED':
+            return <CompletedView onReset={onReset} activeTab={activeTab} />;
+          default:
+             return <RequestView {...props} />; // Fallback to request view
+        }
+    }
+    
+    return <RequestView {...props} />;
   };
 
   return <Card className="w-full max-w-md mx-auto shadow-2xl">{renderContent()}</Card>;
