@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, PersonStanding } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
-import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export type ServiceState = 'IDLE' | 'SEARCHING' | 'PROVIDER_EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED';
@@ -59,7 +59,14 @@ export default function Home() {
 
   // Centralized real-time listener for all open delivery requests
   useEffect(() => {
-    const q = query(collection(db, "deliveryRequests"), where("status", "==", "SEARCHING"));
+    // This listener is always on, ensuring any component that needs the data has it.
+    // We only fetch if the agent is online to show the list, but having the listener
+    // ready is more robust.
+    const q = query(
+      collection(db, "deliveryRequests"), 
+      where("status", "==", "SEARCHING"),
+      orderBy("createdAt", "desc")
+    );
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const requests: DeliveryRequest[] = [];
@@ -76,8 +83,9 @@ export default function Home() {
           createdAt: data.createdAt,
         });
       });
-      setDeliveryRequests(requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setIsFetchingDeliveries(false); // Correctly placed inside the callback
+      setDeliveryRequests(requests);
+      // We set fetching to false after the first successful data retrieval (or empty).
+      setIsFetchingDeliveries(false);
     }, (error) => {
         console.error("Error fetching real-time delivery requests: ", error);
         toast({
@@ -88,22 +96,20 @@ export default function Home() {
         setIsFetchingDeliveries(false);
     });
 
+    // Cleanup the listener when the component unmounts
     return () => unsubscribe();
-  }, [toast]);
+  }, [toast]); // Dependency array includes toast to avoid stale closures.
 
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    // Only simulate ride-hailing flow for transit, not delivery
     if (activeTab === 'transit' && serviceState === 'SEARCHING') {
       setShowStatusScreen(true);
-      // Simulate an agent accepting after 4 seconds for rides.
       timer = setTimeout(() => {
         setProvider(MOCK_PROVIDER);
         setServiceState('PROVIDER_EN_ROUTE');
       }, 4000);
     } else if (serviceState === 'PROVIDER_EN_ROUTE') {
-      // This part now only applies to transit, as delivery is handled by the Firestore listener
       if (activeTab === 'transit') {
         timer = setTimeout(() => {
           setServiceState('IN_PROGRESS');
@@ -111,7 +117,6 @@ export default function Home() {
       }
     } else if (serviceState === 'IN_PROGRESS') {
       const etaMinutes = eta ? parseInt(eta, 10) : 10;
-      // Simulate completion based on ETA
       timer = setTimeout(() => {
         setServiceState('COMPLETED');
       }, etaMinutes * 1000 * 0.5 + 5000);
@@ -125,13 +130,10 @@ export default function Home() {
       const unsub = onSnapshot(doc(db, "deliveryRequests", currentDeliveryId), (doc) => {
         const data = doc.data();
         if (data && data.status === 'AGENT_ASSIGNED') {
-          // A real provider object would come from the agent who accepted.
-          // For now, we use a mock provider.
           setProvider(MOCK_PROVIDER); 
           setServiceState('PROVIDER_EN_ROUTE');
         }
       });
-      // Cleanup listener on component unmount or when delivery is complete/cancelled
       return () => unsub();
     }
   }, [currentDeliveryId, serviceState]);
@@ -158,15 +160,12 @@ export default function Home() {
   };
   
   const handleRequestDelivery = async (data: DeliveryRequestData) => {
-    // Immediately set the state to searching to show the waiting screen
     setServiceState('SEARCHING'); 
     setShowStatusScreen(true);
-    setDestination(data.deliverTo); // For the status screen UI
+    setDestination(data.deliverTo); 
 
-    // Then, run the backend call in the background.
     try {
       const result = await createDeliveryRequest(data);
-      // Store the delivery ID to listen for status updates
       setCurrentDeliveryId(result.deliveryId);
     } catch (error) {
       console.error(error);
@@ -175,7 +174,6 @@ export default function Home() {
         title: 'Error Requesting Delivery',
         description: 'Could not save your request. Please try again.',
       });
-      // If the backend call fails, revert the state back to IDLE so the user can try again.
       handleCancel();
     }
   };

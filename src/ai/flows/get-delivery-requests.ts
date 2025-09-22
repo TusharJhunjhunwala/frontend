@@ -10,7 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const DeliveryRequestSchema = z.object({
@@ -41,13 +41,17 @@ const getDeliveryRequestsFlow = ai.defineFlow(
     outputSchema: GetDeliveryRequestsOutputSchema,
   },
   async () => {
-    const q = query(collection(db, 'deliveryRequests'), where('status', '==', 'SEARCHING'));
+    // Query for searching requests, and order them by creation date descending.
+    // Firestore may require a composite index for this query.
+    const q = query(
+        collection(db, 'deliveryRequests'), 
+        where('status', '==', 'SEARCHING'),
+        orderBy('createdAt', 'desc')
+    );
     const querySnapshot = await getDocs(q);
     const requests: DeliveryRequest[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      // Directly use the string from Firestore, as it's stored as an ISO string.
-      const createdAt = data.createdAt; 
       requests.push({
         id: doc.id,
         pickupPoint: data.pickupPoint,
@@ -56,19 +60,13 @@ const getDeliveryRequestsFlow = ai.defineFlow(
         offerFee: data.offerFee,
         paymentMethod: data.paymentMethod,
         status: data.status,
-        createdAt: createdAt,
+        createdAt: data.createdAt,
       });
     });
 
-    // Sort by creation date, newest first
-    requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    // Validate the parsed requests before returning.
-    // This will throw an error if the data doesn't match the schema.
     const validationResult = GetDeliveryRequestsOutputSchema.safeParse({ requests });
     if (!validationResult.success) {
-      console.error("Data validation failed:", validationResult.error.issues);
-      // Handle the error appropriately, maybe return an empty list or throw
+      console.error("Data validation failed in getDeliveryRequestsFlow:", validationResult.error.issues);
       return { requests: [] };
     }
     
