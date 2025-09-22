@@ -12,12 +12,12 @@ export function AppHeader() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-3 group">
               <Image 
-                src="https://picsum.photos/seed/logo/40/40" 
+                src="https://picsum.photos/seed/transitlogo/40/40" 
                 alt="VITransit Logo"
                 width={40}
                 height={40}
                 className="rounded-lg shadow-md"
-                data-ai-hint="logo abstract"
+                data-ai-hint="logo geometric"
               />
               <span className="text-xl font-bold tracking-tight text-foreground font-headline">
                 VITransit
