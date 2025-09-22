@@ -46,8 +46,8 @@ const getDeliveryRequestsFlow = ai.defineFlow(
     const requests: DeliveryRequest[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      // Directly use the string from Firestore, assuming it's stored as ISO string.
-      const createdAt = typeof data.createdAt === 'string' ? data.createdAt : new Date(data.createdAt.seconds * 1000).toISOString();
+      // Ensure createdAt is always a string.
+      const createdAt = data.createdAt;
       requests.push({
         id: doc.id,
         restaurant: data.restaurant,
@@ -59,6 +59,15 @@ const getDeliveryRequestsFlow = ai.defineFlow(
         createdAt: createdAt,
       });
     });
+
+    // Validate the parsed requests before returning.
+    // This will throw an error if the data doesn't match the schema.
+    const validationResult = GetDeliveryRequestsOutputSchema.safeParse({ requests });
+    if (!validationResult.success) {
+      console.error("Data validation failed:", validationResult.error.issues);
+      // Handle the error appropriately, maybe return an empty list or throw
+      return { requests: [] };
+    }
 
     return { requests };
   }
