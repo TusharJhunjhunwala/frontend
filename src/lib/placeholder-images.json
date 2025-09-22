@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "map-background",
-      "description": "A bird's eye view of a city map",
-      "imageUrl": "https://picsum.photos/seed/citymap/1920/1080",
-      "imageHint": "city map"
+      "description": "A satellite view of the VIT Vellore campus",
+      "imageUrl": "https://picsum.photos/seed/vitmap/1920/1080",
+      "imageHint": "satellite map campus"
     },
     {
       "id": "driver-avatar",

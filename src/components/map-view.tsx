@@ -2,36 +2,36 @@
 import Image from "next/image";
 import { User, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { RideState } from "@/app/page";
+import type { ServiceState } from "@/app/page";
 import { CarIcon } from "@/components/icons/car-icon";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useEffect, useState } from "react";
 
 type MapViewProps = {
-    rideState: RideState;
+    serviceState: ServiceState;
     destination: string | null;
 };
 
-export function MapView({ rideState, destination }: MapViewProps) {
+export function MapView({ serviceState, destination }: MapViewProps) {
     const mapImage = PlaceHolderImages.find(img => img.id === 'map-background');
     const [carPositionClass, setCarPositionClass] = useState('top-full -left-24');
     const [carRotationClass, setCarRotationClass] = useState('-rotate-45');
 
     useEffect(() => {
-        if (rideState === 'DRIVER_EN_ROUTE') {
+        if (serviceState === 'PROVIDER_EN_ROUTE') {
             const timer = setTimeout(() => {
                 setCarPositionClass('top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2');
                 setCarRotationClass('rotate-[135deg]');
             }, 100);
             return () => clearTimeout(timer);
-        } else if (rideState === 'IN_PROGRESS') {
+        } else if (serviceState === 'IN_PROGRESS') {
             setCarPositionClass('top-1/4 right-1/4 -translate-x-1/2 -translate-y-1/2');
             setCarRotationClass('rotate-45');
-        } else if (rideState === 'IDLE' || rideState === 'SEARCHING' || rideState === 'COMPLETED') {
-            const initialPos = rideState === 'COMPLETED' ? 'top-1/4 right-1/4 -translate-x-1/2 -translate-y-1/2' : 'top-full -left-24';
+        } else if (serviceState === 'IDLE' || serviceState === 'SEARCHING' || serviceState === 'COMPLETED') {
+            const initialPos = serviceState === 'COMPLETED' ? 'top-1/4 right-1/4 -translate-x-1/2 -translate-y-1/2' : 'top-full -left-24';
             setCarPositionClass(initialPos);
         }
-    }, [rideState]);
+    }, [serviceState]);
 
 
     return (
@@ -59,7 +59,7 @@ export function MapView({ rideState, destination }: MapViewProps) {
 
             <div className={cn(
                 "absolute transition-all duration-[7000ms] ease-in-out",
-                (rideState === 'IDLE' || rideState === 'SEARCHING') && "opacity-0 duration-500",
+                (serviceState === 'IDLE' || serviceState === 'SEARCHING') && "opacity-0 duration-500",
                 carPositionClass
             )}>
                 <CarIcon className={cn("w-10 h-10 text-accent drop-shadow-lg transition-transform duration-1000", carRotationClass)} />
@@ -68,7 +68,7 @@ export function MapView({ rideState, destination }: MapViewProps) {
             <div className={cn(
                 "absolute top-1/4 right-1/4 -translate-x-1/2 -translate-y-1/2 flex-col items-center",
                 "transition-opacity duration-500",
-                destination && rideState !== 'IDLE' ? 'opacity-100 flex' : 'opacity-0 hidden'
+                destination && serviceState !== 'IDLE' ? 'opacity-100 flex' : 'opacity-0 hidden'
             )}>
                  <div className="relative z-10 p-1 bg-destructive rounded-full shadow-lg">
                     <MapPin className="w-6 h-6 text-destructive-foreground" />
