@@ -498,7 +498,7 @@ function SearchingView({ onCancel, onBack, activeTab }: { onCancel: () => void; 
         </Button>
         {activeTab === 'delivery' && (
           <Button variant="ghost" className="w-full" onClick={onBack}>
-            <ChevronLeft className="mr-2" />
+            <ChevronLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
         )}
@@ -622,3 +622,5 @@ export function RidePanel(props: RidePanelProps) {
 
   return <Card className="w-full max-w-md mx-auto shadow-2xl">{renderContent()}</Card>;
 }
+
+    
