@@ -1,6 +1,7 @@
 import { Bus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
+import { AgentRegistrationForm } from "./agent-registration-form";
 
 export function AppHeader() {
   return (
@@ -22,6 +23,7 @@ export function AppHeader() {
             <Button variant="link" className="text-foreground/80 hover:text-foreground">Delivery</Button>
           </nav>
           <div className="flex items-center gap-4">
+            <AgentRegistrationForm />
             <Button>Sign in</Button>
           </div>
         </div>
