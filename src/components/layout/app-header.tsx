@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { AgentRegistrationForm } from "./agent-registration-form";
 import { AuthForm } from "./auth-form";
+import { LogoIcon } from "../icons/logo-icon";
 
 export function AppHeader() {
   return (
@@ -11,14 +11,7 @@ export function AppHeader() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-3 group">
-              <Image 
-                src="https://picsum.photos/seed/transitlogo/40/40" 
-                alt="VITransit Logo"
-                width={40}
-                height={40}
-                className="rounded-lg shadow-md"
-                data-ai-hint="logo geometric"
-              />
+              <LogoIcon className="w-10 h-10 text-primary" />
               <span className="text-xl font-bold tracking-tight text-foreground font-headline">
                 VITransit
               </span>
