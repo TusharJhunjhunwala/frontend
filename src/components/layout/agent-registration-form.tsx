@@ -36,6 +36,7 @@ const agentApplicationSchema = z.object({
   regNo: z.string().min(6, 'Please enter a valid registration number.'),
   gender: z.enum(['male', 'female', 'other'], { required_error: 'Please select a gender.' }),
   block: z.string().min(1, 'Please enter your block.'),
+  upiId: z.string().min(3, 'Please enter a valid UPI ID.'),
 });
 
 type AgentApplicationFormValues = z.infer<typeof agentApplicationSchema>;
@@ -53,6 +54,7 @@ export function AgentRegistrationForm() {
       email: '',
       regNo: '',
       block: '',
+      upiId: '',
     },
   });
 
@@ -188,6 +190,19 @@ export function AgentRegistrationForm() {
                 )}
               />
             </div>
+             <FormField
+              control={form.control}
+              name="upiId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>UPI ID</FormLabel>
+                  <FormControl>
+                    <Input placeholder="yourname@okhdfcbank" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
