@@ -60,6 +60,9 @@ const getDeliveryRequestsFlow = ai.defineFlow(
       });
     });
 
+    // Sort by creation date, newest first
+    requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     // Validate the parsed requests before returning.
     // This will throw an error if the data doesn't match the schema.
     const validationResult = GetDeliveryRequestsOutputSchema.safeParse({ requests });

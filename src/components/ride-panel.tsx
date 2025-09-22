@@ -376,7 +376,7 @@ function AgentView({ deliveryRequests, isFetchingDeliveries }: Pick<RidePanelPro
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold">Open Delivery Requests</h3>
-            {isFetchingDeliveries && deliveryRequests.length === 0 && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isFetchingDeliveries && <Loader2 className="h-4 w-4 animate-spin" />}
           </div>
           {isFetchingDeliveries && deliveryRequests.length === 0 ? (
             <div className="text-center py-8">
@@ -417,6 +417,9 @@ function AgentView({ deliveryRequests, isFetchingDeliveries }: Pick<RidePanelPro
 function DeliveryView(props: RidePanelProps) {
   const [deliveryTab, setDeliveryTab] = useState('request');
 
+  // Show status button only when a delivery search is active in the background
+  const showViewStatusButton = props.serviceState === 'SEARCHING' && props.activeTab === 'delivery' && !props.showStatusScreen;
+
   return (
     <Tabs value={deliveryTab} onValueChange={setDeliveryTab} className="w-full">
       <TabsList className="grid w-full grid-cols-2">
@@ -430,7 +433,7 @@ function DeliveryView(props: RidePanelProps) {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="request" className="pt-4">
-        {props.serviceState === 'SEARCHING' && props.activeTab === 'delivery' && !props.showStatusScreen ? (
+        {showViewStatusButton ? (
           <div className="text-center space-y-4 py-4">
             <p className="text-muted-foreground">Searching for a deliverer...</p>
             <Button onClick={() => props.setShowStatusScreen(true)}>
@@ -494,7 +497,7 @@ function SearchingView({ onCancel, onBack, activeTab }: { onCancel: () => void; 
         {activeTab === 'delivery' && (
           <Button variant="ghost" className="w-full" onClick={onBack}>
             <ChevronLeft className="mr-2 h-4 w-4" />
-            Back
+            Back to Form
           </Button>
         )}
       </CardFooter>
@@ -591,13 +594,7 @@ export function RidePanel(props: RidePanelProps) {
   const { serviceState, provider, destination, eta, onCancel, onReset, activeTab, showStatusScreen, setShowStatusScreen } = props;
 
   const renderContent = () => {
-    if (!showStatusScreen && (serviceState === 'IDLE' || (serviceState === 'SEARCHING' && activeTab === 'delivery'))) {
-       return <RequestView {...props} />;
-    }
-    
-    // This allows showing the status screen (`Searching`, `In Progress`, etc.)
-    // while still allowing the user to navigate back to the request form
-    if (showStatusScreen || serviceState !== 'IDLE') {
+    if (showStatusScreen || (serviceState !== 'IDLE' && activeTab === 'transit')) {
         switch (serviceState) {
           case 'SEARCHING':
             return <SearchingView onCancel={onCancel} onBack={() => setShowStatusScreen(false)} activeTab={activeTab} />;
