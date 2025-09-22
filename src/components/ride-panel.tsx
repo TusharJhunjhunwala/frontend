@@ -69,10 +69,10 @@ const transitSchema = z.object({
 })
 
 const vehicleData = [
-  { vehicle: 'S1', type: 'Shuttle', eta: '7 min', icon: <Bus /> },
+  { vehicle: 'S1', type: 'M-Shuttle', eta: '7 min', icon: <Bus /> },
   { vehicle: 'A1', type: 'Auto', eta: '3 min', icon: <Car /> },
   { vehicle: 'A2', type: 'Auto', eta: '1 min', icon: <Car /> },
-  { vehicle: 'S2', type: 'Shuttle', eta: '12 min', icon: <Bus /> },
+  { vehicle: 'S2', type: 'L-Shuttle', eta: '12 min', icon: <Bus /> },
   { vehicle: 'A3', type: 'Auto', eta: '5 min', icon: <Car /> },
 ]
 
