@@ -1,13 +1,14 @@
 'use client';
 
 import { AppHeader } from '@/components/layout/app-header';
-import { MapView } from '@/components/map-view';
 import { RidePanel } from '@/components/ride-panel';
 import { useState, useEffect } from 'react';
 import { predictDestinationETA } from '@/ai/flows/predict-destination-eta';
 import { predictDeliveryETA } from '@/ai/flows/predict-delivery-eta';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Badge } from '@/components/ui/badge';
+import { ArrowRight } from 'lucide-react';
 
 export type ServiceState = 'IDLE' | 'SEARCHING' | 'PROVIDER_EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED';
 
@@ -35,10 +36,12 @@ export type RideRequestData = {
 export type DeliveryRequestData = {
   restaurant: string;
   item: string;
-  orderDetails: string;
-  dropOffLocation: string;
-  traffic: 'light' | 'moderate' | 'heavy';
-}
+  deliverTo: string;
+  offerFee: string;
+  maxExtra: string;
+  paymentMethod: 'upi' | 'cod';
+  upiId: string;
+};
 
 export default function Home() {
   const [serviceState, setServiceState] = useState<ServiceState>('IDLE');
@@ -75,7 +78,7 @@ export default function Home() {
       const result = await predictDestinationETA({
         currentLocation: 'VIT Vellore Main Gate',
         destination: data.destination,
-        trafficConditions: data.traffic,
+        trafficConditions: 'moderate', // Simplified for now
       });
       setEta(result.estimatedArrivalTime);
       setServiceState('SEARCHING');
@@ -94,12 +97,12 @@ export default function Home() {
   
   const handleRequestDelivery = async (data: DeliveryRequestData) => {
     setIsSubmitting(true);
-    setDestination(data.dropOffLocation);
+    setDestination(data.deliverTo);
     try {
       const result = await predictDeliveryETA({
         restaurantLocation: data.restaurant,
-        dropOffLocation: data.dropOffLocation,
-        trafficConditions: data.traffic,
+        dropOffLocation: data.deliverTo,
+        trafficConditions: 'moderate', // Simplified for now
       });
       setEta(result.estimatedDeliveryTime);
       setServiceState('SEARCHING');
@@ -128,20 +131,42 @@ export default function Home() {
   };
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-background font-body">
-      <MapView serviceState={serviceState} destination={destination} />
+    <div className="flex flex-col min-h-screen bg-background font-body text-foreground">
       <AppHeader />
-      <RidePanel
-        serviceState={serviceState}
-        provider={provider}
-        destination={destination}
-        eta={eta}
-        isSubmitting={isSubmitting}
-        onRequestRide={handleRequestRide}
-        onRequestDelivery={handleRequestDelivery}
-        onCancel={handleCancel}
-        onReset={handleReset}
-      />
+      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center py-12 lg:py-20">
+          <div className="space-y-6">
+            <Badge variant="outline" className="bg-secondary text-secondary-foreground border-border">
+              <span className="w-2 h-2 mr-2 rounded-full bg-green-500 animate-pulse"></span>
+              VIT Vellore campus • Live ETAs
+            </Badge>
+            <h1 className="text-4xl lg:text-5xl font-bold font-headline tracking-tighter">
+              VITransit: shuttles and autos with live location. P2P food drops between students.
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              See next arrival at your stop, and get meals picked up by peers on their way back to hostel.
+            </p>
+            <div className="flex items-center gap-4">
+              <button className="text-primary font-semibold hover:underline flex items-center gap-2">
+                Learn more <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <div className="lg:pt-8">
+            <RidePanel
+              serviceState={serviceState}
+              provider={provider}
+              destination={destination}
+              eta={eta}
+              isSubmitting={isSubmitting}
+              onRequestRide={handleRequestRide}
+              onRequestDelivery={handleRequestDelivery}
+              onCancel={handleCancel}
+              onReset={handleReset}
+            />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

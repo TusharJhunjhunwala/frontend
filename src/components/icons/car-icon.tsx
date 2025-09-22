@@ -1,3 +1,4 @@
+import { Car, PersonStanding } from "lucide-react";
 import type { SVGProps } from "react";
 
 export function CarIcon(props: SVGProps<SVGSVGElement>) {
@@ -12,3 +13,5 @@ export function CarIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export { Car, PersonStanding };

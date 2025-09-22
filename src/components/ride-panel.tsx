@@ -28,11 +28,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, MapPin, Star, Clock, CheckCircle, ShoppingCart } from 'lucide-react';
+import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding } from 'lucide-react';
 import type { ServiceState, Provider, RideRequestData, DeliveryRequestData } from '@/app/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from './ui/textarea';
-
 
 type RidePanelProps = {
   serviceState: ServiceState;
@@ -48,18 +46,19 @@ type RidePanelProps = {
 
 const rideRequestSchema = z.object({
   destination: z.string().min(3, { message: 'Please enter a valid destination.' }),
-  traffic: z.enum(['light', 'moderate', 'heavy'], {
-    required_error: 'You need to select a traffic condition.',
-  }),
+  traffic: z.enum(['light', 'moderate', 'heavy']),
 });
 
 const deliveryRequestSchema = z.object({
-  restaurant: z.string().min(3, { message: 'Please enter a restaurant.' }),
-  item: z.string().min(3, { message: 'Please enter an item to deliver.' }),
-  orderDetails: z.string().optional(),
-  dropOffLocation: z.string().min(3, { message: 'Please enter a drop-off location.' }),
-  traffic: z.enum(['light', 'moderate', 'heavy']),
+    restaurant: z.string().min(2, "Required"),
+    item: z.string().min(2, "Required"),
+    deliverTo: z.string().min(3, "Required"),
+    offerFee: z.string().min(1, "Required"),
+    maxExtra: z.string().min(1, "Required"),
+    paymentMethod: z.enum(["upi", "cod"]),
+    upiId: z.string().min(3, "Required"),
 });
+
 
 function RideRequestForm({ onRequestRide, isSubmitting }: Pick<RidePanelProps, 'onRequestRide' | 'isSubmitting'>) {
   const form = useForm<z.infer<typeof rideRequestSchema>>({
@@ -73,7 +72,7 @@ function RideRequestForm({ onRequestRide, isSubmitting }: Pick<RidePanelProps, '
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="destination"
@@ -87,31 +86,9 @@ function RideRequestForm({ onRequestRide, isSubmitting }: Pick<RidePanelProps, '
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="traffic"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Current Campus Traffic</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select traffic conditions" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="light">Light</SelectItem>
-                  <SelectItem value="moderate">Moderate</SelectItem>
-                  <SelectItem value="heavy">Heavy</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Request Transit
+          Request Ride
         </Button>
       </form>
     </Form>
@@ -121,26 +98,35 @@ function RideRequestForm({ onRequestRide, isSubmitting }: Pick<RidePanelProps, '
 function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanelProps, 'onRequestDelivery' | 'isSubmitting'>) {
     const form = useForm<z.infer<typeof deliveryRequestSchema>>({
         resolver: zodResolver(deliveryRequestSchema),
-        defaultValues: { restaurant: '', item: '', orderDetails: '', dropOffLocation: '', traffic: 'moderate' },
+        defaultValues: { restaurant: 'Foodys', item: 'Paneer Roll', deliverTo: 'MH Block', offerFee: '20', maxExtra: '30', paymentMethod: 'upi', upiId: 'you@upi' },
     });
 
     function onSubmit(data: z.infer<typeof deliveryRequestSchema>) {
         onRequestDelivery(data);
     }
-
+    
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 mt-4">
-                <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <FormField
                       control={form.control}
                       name="restaurant"
                       render={({ field }) => (
                           <FormItem>
                               <FormLabel>Restaurant</FormLabel>
-                              <FormControl>
-                                  <Input placeholder="e.g., Foodys" {...field} />
-                              </FormControl>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                    <SelectItem value="Foodys">Foodys</SelectItem>
+                                    <SelectItem value="Darling">Darling</SelectItem>
+                                    <SelectItem value="Limra">Limra</SelectItem>
+                                    </SelectContent>
+                                </Select>
                               <FormMessage />
                           </FormItem>
                       )}
@@ -152,7 +138,7 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                           <FormItem>
                               <FormLabel>Item</FormLabel>
                               <FormControl>
-                                  <Input placeholder="e.g., Biryani" {...field} />
+                                  <Input placeholder="e.g., Paneer Roll" {...field} />
                               </FormControl>
                               <FormMessage />
                           </FormItem>
@@ -161,55 +147,90 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                 </div>
                 <FormField
                     control={form.control}
-                    name="orderDetails"
+                    name="deliverTo"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Order Details</FormLabel>
+                            <FormLabel>Deliver to</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="e.g., 2 Gobi Manchurian, make one spicy." {...field} />
+                                <Input placeholder="e.g., MH Block" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="dropOffLocation"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Drop-off Location</FormLabel>
-                            <FormControl>
-                                <Input placeholder="e.g., Men's Hostel Q-block" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="offerFee"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Offer fee (₹)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="20" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="maxExtra"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Max extra (₹)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="30" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
                  <FormField
                   control={form.control}
-                  name="traffic"
+                  name="paymentMethod"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Campus Traffic</FormLabel>
+                      <FormLabel>Payment method</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select traffic conditions" />
+                            <SelectValue placeholder="Select payment method" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="light">Light</SelectItem>
-                          <SelectItem value="moderate">Moderate</SelectItem>
-                          <SelectItem value="heavy">Heavy</SelectItem>
+                          <SelectItem value="upi">UPI</SelectItem>
+                          <SelectItem value="cod">Cash on Delivery</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full !mt-5" disabled={isSubmitting}>
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="upiId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Your UPI ID</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="you@upi" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormItem>
+                        <FormLabel>Carrier UPI (after match)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="carrier@upi" disabled />
+                        </FormControl>
+                    </FormItem>
+                </div>
+                <Button type="submit" className="w-full !mt-6" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Find a Deliverer
+                    Find a deliverer
                 </Button>
             </form>
         </Form>
@@ -219,20 +240,20 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
 function RequestView(props: Pick<RidePanelProps, 'onRequestRide' | 'isSubmitting' | 'onRequestDelivery'>) {
   return (
     <>
-      <CardHeader>
-        <CardTitle className="font-headline text-2xl">How can we help?</CardTitle>
-        <CardDescription>Book a ride or get something delivered.</CardDescription>
+      <CardHeader className="text-center">
+        <CardTitle className="font-headline text-2xl">Experience</CardTitle>
+        <CardDescription>Live campus transit and student-to-student delivery.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="transit" className="w-full">
+      <CardContent className="px-3 sm:px-6">
+        <Tabs defaultValue="delivery" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="transit">Transit</TabsTrigger>
-                <TabsTrigger value="delivery">Delivery</TabsTrigger>
+                <TabsTrigger value="transit"><Car className="mr-2" />Transit</TabsTrigger>
+                <TabsTrigger value="delivery"><PersonStanding className="mr-2" />Peer Delivery</TabsTrigger>
             </TabsList>
-            <TabsContent value="transit">
+            <TabsContent value="transit" className="pt-4">
                 <RideRequestForm {...props} />
             </TabsContent>
-            <TabsContent value="delivery">
+            <TabsContent value="delivery" className="pt-4">
                 <DeliveryRequestForm {...props} />
             </TabsContent>
         </Tabs>
@@ -327,14 +348,12 @@ function CompletedView({ onReset }: Pick<RidePanelProps, 'onReset'>) {
 
 export function RidePanel(props: RidePanelProps) {
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
-      <Card className="max-w-md mx-auto shadow-2xl">
+    <Card className="w-full max-w-md mx-auto shadow-2xl rounded-xl">
         {props.serviceState === 'IDLE' && <RequestView {...props} />}
         {props.serviceState === 'SEARCHING' && <SearchingView {...props} />}
         {props.serviceState === 'PROVIDER_EN_ROUTE' && <ProviderEnRouteView {...props} />}
         {props.serviceState === 'IN_PROGRESS' && <InProgressView {...props} />}
         {props.serviceState === 'COMPLETED' && <CompletedView {...props} />}
-      </Card>
-    </div>
+    </Card>
   );
 }
