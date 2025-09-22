@@ -98,9 +98,10 @@ export default function Home() {
   
   const handleRequestDelivery = async (data: DeliveryRequestData) => {
     setIsSubmitting(true);
-    setDestination(data.deliverTo); // Set destination for the UI status
     try {
       await createDeliveryRequest(data);
+      // Set destination for the UI status
+      setDestination(data.deliverTo);
       // Set a placeholder ETA, as the backend no longer provides it immediately.
       setEta("~15-20");
       // This state change will show the "waiting for agent" view.
@@ -112,6 +113,8 @@ export default function Home() {
         title: 'Error Requesting Delivery',
         description: 'Could not save your request. Please try again.',
       });
+      // In case of error, reset to IDLE so user can try again.
+      setServiceState('IDLE');
     } finally {
       setIsSubmitting(false);
     }
