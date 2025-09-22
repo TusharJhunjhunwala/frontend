@@ -27,12 +27,15 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus } from 'lucide-react';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const agentApplicationSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   phone: z.string().regex(/^\d{10}$/, 'Please enter a valid 10-digit phone number.'),
   email: z.string().email('Please enter a valid VIT email address.').regex(/@vitstudent.ac.in$/, 'Must be a vitstudent.ac.in email.'),
   regNo: z.string().min(6, 'Please enter a valid registration number.'),
+  gender: z.enum(['male', 'female', 'other'], { required_error: 'Please select a gender.' }),
+  block: z.string().min(1, 'Please enter your block.'),
 });
 
 type AgentApplicationFormValues = z.infer<typeof agentApplicationSchema>;
@@ -49,6 +52,7 @@ export function AgentRegistrationForm() {
       phone: '',
       email: '',
       regNo: '',
+      block: '',
     },
   });
 
@@ -147,6 +151,43 @@ export function AgentRegistrationForm() {
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gender</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="block"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Block</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Q" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
