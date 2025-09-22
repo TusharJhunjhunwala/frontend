@@ -52,8 +52,6 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('transit');
-  const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
-  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false);
   const [currentDeliveryId, setCurrentDeliveryId] = useState<string | null>(null);
   const [showStatusScreen, setShowStatusScreen] = useState(false);
 
@@ -129,8 +127,6 @@ export default function Home() {
     try {
       const result = await createDeliveryRequest(data);
       setCurrentDeliveryId(result.deliveryId);
-      // Refresh the delivery list for the agent view in the background.
-      handleFetchDeliveries();
     } catch (error) {
       console.error(error);
       toast({
@@ -140,23 +136,6 @@ export default function Home() {
       });
       // If the backend call fails, revert the state back to IDLE so the user can try again.
       handleCancel();
-    }
-  };
-
-  const handleFetchDeliveries = async () => {
-    setIsFetchingDeliveries(true);
-    try {
-        const result = await getDeliveryRequests();
-        setDeliveryRequests(result.requests);
-    } catch (error) {
-        console.error(error);
-        toast({
-            variant: 'destructive',
-            title: 'Error Fetching Deliveries',
-            description: 'Could not fetch delivery requests. Please try again.',
-        });
-    } finally {
-        setIsFetchingDeliveries(false);
     }
   };
 
@@ -225,9 +204,6 @@ export default function Home() {
               onReset={handleReset}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
-              deliveryRequests={deliveryRequests}
-              isFetchingDeliveries={isFetchingDeliveries}
-              onFetchDeliveries={handleFetchDeliveries}
               showStatusScreen={showStatusScreen}
               setShowStatusScreen={setShowStatusScreen}
             />
