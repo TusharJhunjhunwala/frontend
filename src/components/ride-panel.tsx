@@ -243,7 +243,7 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                             <FormItem>
                                 <FormLabel>Offer fee (₹)</FormLabel>
                                 <FormControl>
-                                    <Input type="number" placeholder="20" {...field} />
+                                    <Input type="text" placeholder="20" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -256,7 +256,7 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                             <FormItem>
                                 <FormLabel>Max extra (₹)</FormLabel>
                                 <FormControl>
-                                    <Input type="number" placeholder="30" {...field} />
+                                    <Input type="text" placeholder="30" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
