@@ -1,3 +1,16 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "map-background",
+      "description": "A bird's eye view of a city map",
+      "imageUrl": "https://picsum.photos/seed/citymap/1920/1080",
+      "imageHint": "city map"
+    },
+    {
+      "id": "driver-avatar",
+      "description": "Portrait of a friendly driver",
+      "imageUrl": "https://picsum.photos/seed/driver/100/100",
+      "imageHint": "portrait person"
+    }
+  ]
 }
