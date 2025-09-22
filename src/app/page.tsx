@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, PersonStanding } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
-import { doc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export type ServiceState = 'IDLE' | 'SEARCHING' | 'PROVIDER_EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED';
@@ -59,13 +59,9 @@ export default function Home() {
 
   // Centralized real-time listener for all open delivery requests
   useEffect(() => {
-    // This listener is always on, ensuring any component that needs the data has it.
-    // We only fetch if the agent is online to show the list, but having the listener
-    // ready is more robust.
     const q = query(
       collection(db, "deliveryRequests"), 
-      where("status", "==", "SEARCHING"),
-      orderBy("createdAt", "desc")
+      where("status", "==", "SEARCHING")
     );
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -83,8 +79,9 @@ export default function Home() {
           createdAt: data.createdAt,
         });
       });
+      // Newest requests will appear first.
+      requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setDeliveryRequests(requests);
-      // We set fetching to false after the first successful data retrieval (or empty).
       setIsFetchingDeliveries(false);
     }, (error) => {
         console.error("Error fetching real-time delivery requests: ", error);
@@ -98,7 +95,7 @@ export default function Home() {
 
     // Cleanup the listener when the component unmounts
     return () => unsubscribe();
-  }, [toast]); // Dependency array includes toast to avoid stale closures.
+  }, [toast]);
 
 
   useEffect(() => {
