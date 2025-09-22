@@ -55,9 +55,18 @@ export default function Home() {
   const [showStatusScreen, setShowStatusScreen] = useState(false);
   const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
   const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(true);
+  const [isAgentOnline, setIsAgentOnline] = useState(false);
+
 
   // Real-time listener for open delivery requests
   useEffect(() => {
+    // Only listen if the agent has toggled themselves online
+    if (!isAgentOnline) {
+      setDeliveryRequests([]);
+      setIsFetchingDeliveries(false);
+      return;
+    }
+
     setIsFetchingDeliveries(true);
     const q = query(collection(db, "deliveryRequests"), where("status", "==", "SEARCHING"));
     
@@ -80,12 +89,17 @@ export default function Home() {
       setIsFetchingDeliveries(false);
     }, (error) => {
         console.error("Error fetching real-time delivery requests: ", error);
+        toast({
+          variant: 'destructive',
+          title: 'Real-time Error',
+          description: 'Could not fetch delivery updates.',
+        });
         setIsFetchingDeliveries(false);
     });
 
-    // Cleanup subscription on component unmount
+    // Cleanup subscription on component unmount or when agent goes offline
     return () => unsubscribe();
-  }, []);
+  }, [isAgentOnline, toast]);
 
 
   useEffect(() => {
@@ -245,6 +259,8 @@ export default function Home() {
               setShowStatusScreen={setShowStatusScreen}
               deliveryRequests={deliveryRequests}
               isFetchingDeliveries={isFetchingDeliveries}
+              isAgentOnline={isAgentOnline}
+              setIsAgentOnline={setIsAgentOnline}
             />
           </div>
         </div>

@@ -34,7 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { CampusMap } from './campus-map';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
@@ -57,6 +57,8 @@ type RidePanelProps = {
   setShowStatusScreen: (show: boolean) => void;
   deliveryRequests: DeliveryRequest[];
   isFetchingDeliveries: boolean;
+  isAgentOnline: boolean;
+  setIsAgentOnline: (isOnline: boolean) => void;
 };
 
 const rideRequestSchema = z.object({
@@ -300,8 +302,7 @@ function AgentAcceptedView({ onComplete }: { onComplete: () => void }) {
 }
 
 
-function AgentView({ deliveryRequests, isFetchingDeliveries }: Pick<RidePanelProps, 'deliveryRequests' | 'isFetchingDeliveries'>) {
-  const [isOnline, setIsOnline] = useState(false);
+function AgentView({ deliveryRequests, isFetchingDeliveries, isAgentOnline, setIsAgentOnline }: Pick<RidePanelProps, 'deliveryRequests' | 'isFetchingDeliveries' | 'isAgentOnline' | 'setIsAgentOnline'>) {
   const [acceptedJob, setAcceptedJob] = useState<DeliveryRequest | null>(null);
 
   const handleAcceptJob = async (req: DeliveryRequest) => {
@@ -357,8 +358,8 @@ function AgentView({ deliveryRequests, isFetchingDeliveries }: Pick<RidePanelPro
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-2 rounded-lg border p-3">
-              <Switch id="online-status" checked={isOnline} onCheckedChange={setIsOnline} />
-              <Label htmlFor="online-status" className="flex-grow">{isOnline ? 'You are Online' : 'You are Offline'}</Label>
+              <Switch id="online-status" checked={isAgentOnline} onCheckedChange={setIsAgentOnline} />
+              <Label htmlFor="online-status" className="flex-grow">{isAgentOnline ? 'You are Online' : 'You are Offline'}</Label>
             </div>
           </CardContent>
         </Card>
@@ -372,7 +373,7 @@ function AgentView({ deliveryRequests, isFetchingDeliveries }: Pick<RidePanelPro
         </Card>
       </div>
 
-      {isOnline && (
+      {isAgentOnline && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold">Open Delivery Requests</h3>
