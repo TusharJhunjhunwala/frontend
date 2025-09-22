@@ -14,8 +14,8 @@ const locations = [
 ];
 
 const vehicles = [
-  { id: 'MH-S', type: 'Shuttle' as const, path: ['Main Gate', "Men's Hostel", 'M Block', 'Food Court', 'Technology Tower', 'Main Gate'] },
-  { id: 'LH-S', type: 'Shuttle' as const, path: ['Main Gate', 'Library', "Ladies Hostel", 'Technology Tower', 'Main Gate'] },
+  { id: 'MH-S', type: 'Shuttle' as const, path: ['Main Gate', "Men's Hostel", 'M Block', 'Library', 'Technology Tower', 'Main Gate'] },
+  { id: 'LH-S', type: 'Shuttle' as const, path: ['Main Gate', "Ladies Hostel", 'Technology Tower', 'Library', 'M Block', 'Main Gate'] },
   { id: 'A2', type: 'Auto' as const, path: ["Men's Hostel", 'M Block', 'Food Court', 'Library', 'Technology Tower', 'Main Gate'] },
 ];
 
