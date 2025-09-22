@@ -1,12 +1,6 @@
 {
   "placeholderImages": [
     {
-      "id": "map-background",
-      "description": "A satellite view of the VIT Vellore campus",
-      "imageUrl": "https://images.unsplash.com/photo-1620122830785-a895b602251a?q=80&w=1920&h=1080&fit=crop",
-      "imageHint": "satellite map campus"
-    },
-    {
       "id": "driver-avatar",
       "description": "Portrait of a friendly driver",
       "imageUrl": "https://picsum.photos/seed/driver/100/100",

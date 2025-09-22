@@ -31,16 +31,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus } from 'lucide-react';
 import type { ServiceState, Provider, RideRequestData, DeliveryRequestData } from '@/app/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import Image from 'next/image';
-import { LiveVehicleMarker } from './live-vehicle-marker';
+import { CampusMap } from './campus-map';
 
 
 type RidePanelProps = {
@@ -75,18 +68,6 @@ const transitSchema = z.object({
   stop: z.string(),
 })
 
-const chartData = [
-  { time: "0", value: 10 },
-  { time: "1", value: 20 },
-  { time: "2", value: 15 },
-  { time: "3", value: 30 },
-  { time: "4", value: 25 },
-  { time: "5", value: 40 },
-  { time: "6", value: 35 },
-  { time: "7", value: 50 },
-  { time: "8", value: 45 },
-]
-
 const vehicleData = [
   { vehicle: 'S1', type: 'Shuttle', eta: '7 min', icon: <Bus /> },
   { vehicle: 'A1', type: 'Auto', eta: '3 min', icon: <Car /> },
@@ -99,11 +80,9 @@ const vehicleData = [
 function TransitView() {
   const form = useForm<z.infer<typeof transitSchema>>({
     resolver: zodResolver(transitSchema),
-    defaultValues: { stop: "main-gate" },
+    defaultValues: { stop: "tt" },
   });
   
-  const mapImageUrl = PlaceHolderImages.find(img => img.id === 'map-background')?.imageUrl || '';
-
   return (
     <FormProvider {...form}>
       <form className="space-y-4">
@@ -155,11 +134,10 @@ function TransitView() {
             </FormItem>
           )}
         />
-        <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
-            <Image src={mapImageUrl} alt="VIT Vellore Map" layout="fill" objectFit="cover" data-ai-hint="satellite map campus" />
-            {vehicleData.map((v) => (
-                <LiveVehicleMarker key={v.vehicle} type={v.type as 'Shuttle' | 'Auto'} />
-            ))}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Campus live map</h3>
+          <p className="text-sm text-muted-foreground">Shuttles and autos moving on a simple campus grid.</p>
+          <CampusMap />
         </div>
 
         <div className="space-y-2">
@@ -378,13 +356,14 @@ function ProviderEnRouteView({ provider, onCancel, activeTab }: Pick<RidePanelPr
   if (!provider) return null;
 
   const titleText = activeTab === 'transit' ? `${provider.name} is on the way` : `Your deliverer is on the way`;
+  const avatarUrl = PlaceHolderImages.find(img => img.id === 'driver-avatar')?.imageUrl || '';
 
   return (
     <>
         <CardHeader>
             <div className="flex items-center space-x-4">
                 <Avatar className="w-16 h-16 border-2 border-primary">
-                    <AvatarImage src={provider.avatarUrl} alt={provider.name} data-ai-hint="portrait person" />
+                    <AvatarImage src={avatarUrl} alt={provider.name} data-ai-hint="portrait person" />
                     <AvatarFallback>{provider.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
