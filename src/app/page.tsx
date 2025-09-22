@@ -3,8 +3,8 @@
 import { AppHeader } from '@/components/layout/app-header';
 import { RidePanel } from '@/components/ride-panel';
 import { useState, useEffect } from 'react';
-import { predictDestinationETA } from '@/ai/flows/predict-destination-eta';
-import { predictDeliveryETA } from '@/ai/flows/predict-delivery-eta';
+import { createRideRequest } from '@/ai/flows/create-ride-request';
+import { createDeliveryRequest } from '@/ai/flows/create-delivery-request';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
@@ -76,19 +76,15 @@ export default function Home() {
     setIsSubmitting(true);
     setDestination(data.destination);
     try {
-      const result = await predictDestinationETA({
-        currentLocation: 'VIT Vellore Main Gate',
-        destination: data.destination,
-        trafficConditions: 'moderate', // Simplified for now
-      });
+      const result = await createRideRequest(data);
       setEta(result.estimatedArrivalTime);
       setServiceState('SEARCHING');
     } catch (error) {
       console.error(error);
       toast({
         variant: 'destructive',
-        title: 'Error Predicting ETA',
-        description: 'Could not connect to the AI service. Please try again.',
+        title: 'Error Requesting Ride',
+        description: 'Could not save your request. Please try again.',
       });
       setDestination('');
     } finally {
@@ -100,19 +96,15 @@ export default function Home() {
     setIsSubmitting(true);
     setDestination(data.deliverTo);
     try {
-      const result = await predictDeliveryETA({
-        restaurantLocation: data.restaurant,
-        dropOffLocation: data.deliverTo,
-        trafficConditions: 'moderate', // Simplified for now
-      });
+      const result = await createDeliveryRequest(data);
       setEta(result.estimatedDeliveryTime);
       setServiceState('SEARCHING');
     } catch (error) {
       console.error(error);
       toast({
         variant: 'destructive',
-        title: 'Error Predicting ETA',
-        description: 'Could not connect to the AI service. Please try again.',
+        title: 'Error Requesting Delivery',
+        description: 'Could not save your request. Please try again.',
       });
       setDestination('');
     } finally {
