@@ -97,15 +97,15 @@ export default function Home() {
   };
   
   const handleRequestDelivery = async (data: DeliveryRequestData) => {
-    setIsSubmitting(true);
+    // Immediately set the state to searching to show the waiting screen
+    setDestination(data.deliverTo);
+    setEta("~15-20");
+    setServiceState('SEARCHING'); 
+
+    // Then, run the backend call in the background.
     try {
       await createDeliveryRequest(data);
-      // Set destination for the UI status
-      setDestination(data.deliverTo);
-      // Set a placeholder ETA, as the backend no longer provides it immediately.
-      setEta("~15-20");
-      // This state change will show the "waiting for agent" view.
-      setServiceState('SEARCHING'); 
+      // No need to set state again, it's already 'SEARCHING'
     } catch (error) {
       console.error(error);
       toast({
@@ -113,10 +113,10 @@ export default function Home() {
         title: 'Error Requesting Delivery',
         description: 'Could not save your request. Please try again.',
       });
-      // In case of error, reset to IDLE so user can try again.
+      // If the backend call fails, revert the state back to IDLE so the user can try again.
       setServiceState('IDLE');
-    } finally {
-      setIsSubmitting(false);
+      setDestination('');
+      setEta(null);
     }
   };
 
