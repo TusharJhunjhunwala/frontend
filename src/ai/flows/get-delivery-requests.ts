@@ -46,8 +46,8 @@ const getDeliveryRequestsFlow = ai.defineFlow(
     const requests: DeliveryRequest[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      // Ensure createdAt is always a string.
-      const createdAt = data.createdAt;
+      // Directly use the string from Firestore, as it's stored as an ISO string.
+      const createdAt = data.createdAt; 
       requests.push({
         id: doc.id,
         restaurant: data.restaurant,
@@ -68,7 +68,7 @@ const getDeliveryRequestsFlow = ai.defineFlow(
       // Handle the error appropriately, maybe return an empty list or throw
       return { requests: [] };
     }
-
-    return { requests };
+    
+    return validationResult.data;
   }
 );

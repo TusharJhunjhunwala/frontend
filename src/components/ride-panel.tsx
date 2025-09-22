@@ -413,6 +413,13 @@ function AgentView({
 function DeliveryView(props: RidePanelProps) {
   const [deliveryTab, setDeliveryTab] = useState('request');
 
+  useEffect(() => {
+    // Fetch deliveries only when the agent tab is active
+    if (deliveryTab === 'agent' && props.activeTab === 'delivery') {
+      props.onFetchDeliveries();
+    }
+  }, [deliveryTab, props.activeTab, props.onFetchDeliveries]);
+
   return (
     <Tabs value={deliveryTab} onValueChange={setDeliveryTab} className="w-full">
       <TabsList className="grid w-full grid-cols-2">
@@ -542,33 +549,51 @@ function InProgressView({ destination, eta, activeTab }: Pick<RidePanelProps, 'd
 
 function CompletedView({ onReset, activeTab }: Pick<RidePanelProps, 'onReset' | 'activeTab'>) {
     const titleText = activeTab === 'transit' ? "You've Arrived!" : "Delivery Complete!";
-    const descriptionText = activeTab === 'transit' ? "We hope you had a pleasant journey." : "Enjoy your meal!";
+    const descriptionText = activeTab === 'delivery'
+      ? 'Your item has been delivered. Thank you for using VITransit!'
+      : `You have arrived at your destination. We hope you had a pleasant ride!`;
 
     return (
         <>
             <CardHeader className="items-center text-center">
                 <CheckCircle className="w-12 h-12 text-green-500" />
                 <CardTitle className="font-headline mt-4">{titleText}</CardTitle>
-                <CardDescription>Thank you for using VITransit.</CardDescription>
+                <CardDescription>{descriptionText}</CardDescription>
             </CardHeader>
-            <CardContent className="text-center">
-                 <p className="text-sm text-muted-foreground">{descriptionText}</p>
-            </CardContent>
-            <CardFooter>
-                <Button className="w-full" onClick={onReset}>New Request</Button>
+            <CardFooter className="flex-col gap-2">
+                <p className="text-sm text-muted-foreground">Please rate your experience.</p>
+                <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map(rating => (
+                        <Button key={rating} variant="ghost" size="icon">
+                            <Star className="w-6 h-6" />
+                        </Button>
+                    ))}
+                </div>
+                 <Button className="w-full mt-4" onClick={onReset}>Done</Button>
             </CardFooter>
         </>
     )
 }
 
 export function RidePanel(props: RidePanelProps) {
-  return (
-    <Card className="w-full max-w-lg mx-auto shadow-2xl rounded-xl">
-        {props.serviceState === 'IDLE' && <RequestView {...props} />}
-        {props.serviceState === 'SEARCHING' && <SearchingView {...props} />}
-        {props.serviceState === 'PROVIDER_EN_ROUTE' && <ProviderEnRouteView {...props} />}
-        {props.serviceState === 'IN_PROGRESS' && <InProgressView {...props} />}
-        {props.serviceState === 'COMPLETED' && <CompletedView {...props} />}
-    </Card>
-  );
+  const { serviceState, provider, destination, eta, onCancel, onReset, activeTab } = props;
+
+  const renderContent = () => {
+    switch (serviceState) {
+      case 'IDLE':
+        return <RequestView {...props} />;
+      case 'SEARCHING':
+        return <SearchingView onCancel={onCancel} activeTab={activeTab} />;
+      case 'PROVIDER_EN_ROUTE':
+        return <ProviderEnRouteView provider={provider} onCancel={onCancel} activeTab={activeTab} />;
+      case 'IN_PROGRESS':
+        return <InProgressView destination={destination} eta={eta} activeTab={activeTab} />;
+      case 'COMPLETED':
+        return <CompletedView onReset={onReset} activeTab={activeTab} />;
+      default:
+        return <RequestView {...props} />;
+    }
+  };
+
+  return <Card className="w-full max-w-md mx-auto shadow-2xl">{renderContent()}</Card>;
 }
