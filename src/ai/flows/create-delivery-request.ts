@@ -47,7 +47,7 @@ const createDeliveryRequestFlow = ai.defineFlow(
         offerFee: input.offerFee,
         paymentMethod: 'cod', // Always 'cod' as requested
         status: 'SEARCHING',
-        createdAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(), // Save as ISO string
     });
 
     // 2. Predict the ETA for the delivery.
