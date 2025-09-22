@@ -445,13 +445,16 @@ function RequestView(props: RidePanelProps) {
 }
 
 
-function SearchingView({ onCancel }: Pick<RidePanelProps, 'onCancel'>) {
+function SearchingView({ onCancel, activeTab }: Pick<RidePanelProps, 'onCancel' | 'activeTab'>) {
+  const titleText = activeTab === 'transit' ? 'Finding Your Ride' : 'Finding a Deliverer';
+  const descriptionText = activeTab === 'transit' ? 'Please wait while we connect you to a driver.' : 'Please wait while we find an agent for your delivery.';
+
   return (
     <>
       <CardHeader className="items-center text-center">
         <Loader2 className="w-12 h-12 text-primary animate-spin" />
-        <CardTitle className="font-headline mt-4">Finding Your Provider</CardTitle>
-        <CardDescription>Please wait while we connect you.</CardDescription>
+        <CardTitle className="font-headline mt-4">{titleText}</CardTitle>
+        <CardDescription>{descriptionText}</CardDescription>
       </CardHeader>
       <CardFooter>
         <Button variant="outline" className="w-full" onClick={onCancel}>
