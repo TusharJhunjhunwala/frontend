@@ -14,8 +14,8 @@ const locations = [
 ];
 
 const vehicles = [
-  { id: 'S1', type: 'Shuttle' as const, path: ['Main Gate', 'Technology Tower', "Ladies Hostel", 'Library', 'M Block', "Men's Hostel"] },
-  { id: 'A2', type: 'Auto' as const, path: ["Men's Hostel", 'M Block', 'Library', 'Technology Tower'] },
+  { id: 'S1', type: 'Shuttle' as const, path: ['Main Gate', 'Technology Tower', "Men's Hostel", 'M Block', 'Food Court', 'Library', "Ladies Hostel"] },
+  { id: 'A2', type: 'Auto' as const, path: ["Men's Hostel", 'M Block', 'Food Court', 'Library', 'Technology Tower', 'Main Gate'] },
 ];
 
 const SVG_WIDTH = 500;
