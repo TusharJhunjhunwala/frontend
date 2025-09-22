@@ -38,8 +38,6 @@ import { useState, useEffect } from 'react';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -51,6 +49,7 @@ type RidePanelProps = {
   isSubmitting: boolean;
   onRequestRide: (data: RideRequestData) => void;
   onRequestDelivery: (data: DeliveryRequestData) => void;
+  onAcceptDelivery: (id: string) => void;
   onCancel: () => void;
   onReset: () => void;
   activeTab: string;
@@ -304,15 +303,13 @@ function AgentAcceptedView({ onComplete, request }: { onComplete: () => void, re
 }
 
 
-function AgentView({ isAgentOnline, setIsAgentOnline, deliveryRequests, isFetchingDeliveries }: Pick<RidePanelProps, 'isAgentOnline' | 'setIsAgentOnline' | 'deliveryRequests' | 'isFetchingDeliveries'>) {
+function AgentView({ isAgentOnline, setIsAgentOnline, deliveryRequests, isFetchingDeliveries, onAcceptDelivery }: Pick<RidePanelProps, 'isAgentOnline' | 'setIsAgentOnline' | 'deliveryRequests' | 'isFetchingDeliveries' | 'onAcceptDelivery'>) {
   const [acceptedJob, setAcceptedJob] = useState<DeliveryRequest | null>(null);
   const { toast } = useToast();
 
   const handleAcceptJob = async (req: DeliveryRequest) => {
     try {
-      const deliveryRef = doc(db, 'deliveryRequests', req.id);
-      // In a real app, you'd also assign an agentId here
-      await updateDoc(deliveryRef, { status: 'AGENT_ASSIGNED' }); 
+      onAcceptDelivery(req.id);
       setAcceptedJob(req);
     } catch (error) {
         console.error("Error accepting job: ", error);
@@ -323,8 +320,7 @@ function AgentView({ isAgentOnline, setIsAgentOnline, deliveryRequests, isFetchi
   const handleCompleteJob = async () => {
     if (!acceptedJob) return;
     try {
-      const deliveryRef = doc(db, 'deliveryRequests', acceptedJob.id);
-      await updateDoc(deliveryRef, { status: 'COMPLETED' });
+      // In a real DB-backed app, you would update the status to COMPLETED here.
       setAcceptedJob(null); // Return to the list of open requests
       toast({ title: 'Success', description: 'Delivery marked as complete.' });
     } catch (error) {

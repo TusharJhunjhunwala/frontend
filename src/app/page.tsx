@@ -4,7 +4,6 @@ import { AppHeader } from '@/components/layout/app-header';
 import { RidePanel } from '@/components/ride-panel';
 import { useState, useEffect } from 'react';
 import { createRideRequest } from '@/ai/flows/create-ride-request';
-import { createDeliveryRequest } from '@/ai/flows/create-delivery-request';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
@@ -55,48 +54,14 @@ export default function Home() {
   const [showStatusScreen, setShowStatusScreen] = useState(false);
   const [isAgentOnline, setIsAgentOnline] = useState(false);
   const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
-  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(true);
+  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false); // No longer fetching from DB
 
   // Centralized real-time listener for all open delivery requests
   useEffect(() => {
-    // Query for searching requests. We will sort them on the client-side.
-    const q = query(
-      collection(db, "deliveryRequests"), 
-      where("status", "==", "SEARCHING")
-    );
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const requests: DeliveryRequest[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        requests.push({
-          id: doc.id,
-          pickupPoint: data.pickupPoint,
-          item: data.item,
-          deliverTo: data.deliverTo,
-          offerFee: data.offerFee,
-          paymentMethod: data.paymentMethod,
-          status: data.status,
-          createdAt: data.createdAt,
-        });
-      });
-      // Newest requests will appear first.
-      const sortedRequests = requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setDeliveryRequests(sortedRequests);
-      setIsFetchingDeliveries(false);
-    }, (error) => {
-        console.error("Error fetching real-time delivery requests: ", error);
-        toast({
-          variant: 'destructive',
-          title: 'Real-time Error',
-          description: 'Could not fetch delivery updates.',
-        });
-        setIsFetchingDeliveries(false);
-    });
-
-    // Cleanup the listener when the component unmounts
-    return () => unsubscribe();
-  }, [toast]);
+    // This listener has been moved to manage local state only, no DB call.
+    // The isFetchingDeliveries state is set to false as we are not fetching.
+    setIsFetchingDeliveries(false);
+  }, []);
 
 
   useEffect(() => {
@@ -157,23 +122,25 @@ export default function Home() {
     }
   };
   
-  const handleRequestDelivery = async (data: DeliveryRequestData) => {
+  const handleRequestDelivery = (data: DeliveryRequestData) => {
+    const newRequest: DeliveryRequest = {
+        id: new Date().getTime().toString(), // Use timestamp for unique ID in-memory
+        ...data,
+        paymentMethod: 'cod',
+        status: 'SEARCHING',
+        createdAt: new Date().toISOString(),
+    };
+
+    setDeliveryRequests(prevRequests => [newRequest, ...prevRequests]);
     setServiceState('SEARCHING'); 
     setShowStatusScreen(true);
     setDestination(data.deliverTo); 
+    setCurrentDeliveryId(newRequest.id); // For simulation purposes
 
-    try {
-      const result = await createDeliveryRequest(data);
-      setCurrentDeliveryId(result.deliveryId);
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Requesting Delivery',
-        description: 'Could not save your request. Please try again.',
-      });
-      handleCancel();
-    }
+    toast({
+      title: 'Request Sent!',
+      description: 'Your delivery request is now visible to online agents.',
+    });
   };
 
 
@@ -189,6 +156,16 @@ export default function Home() {
   const handleReset = () => {
     handleCancel();
   };
+
+  const handleAcceptDelivery = (requestId: string) => {
+    setDeliveryRequests(prev => prev.filter(req => req.id !== requestId));
+    // Simulate agent assignment for the requester's view
+    if (requestId === currentDeliveryId) {
+        setServiceState('PROVIDER_EN_ROUTE');
+        setProvider(MOCK_PROVIDER);
+    }
+  };
+
 
   const features = [
     "Live shuttle & auto ETAs",
@@ -237,6 +214,7 @@ export default function Home() {
               isSubmitting={isSubmitting}
               onRequestRide={handleRequestRide}
               onRequestDelivery={handleRequestDelivery}
+              onAcceptDelivery={handleAcceptDelivery}
               onCancel={handleCancel}
               onReset={handleReset}
               activeTab={activeTab}
