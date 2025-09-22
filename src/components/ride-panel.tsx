@@ -365,7 +365,6 @@ function AgentView({
           </CardHeader>
           <CardContent className="space-y-2">
             <Button className="w-full justify-start"><History className="mr-2"/>View Delivery History</Button>
-            <Button variant="secondary" className="w-full justify-start"><Bike className="mr-2"/>Update Vehicle Info</Button>
           </CardContent>
         </Card>
       </div>
@@ -547,7 +546,7 @@ function InProgressView({ destination, eta, activeTab }: Pick<RidePanelProps, 'd
 
 function CompletedView({ onReset, activeTab }: Pick<RidePanelProps, 'onReset' | 'activeTab'>) {
     const titleText = activeTab === 'transit' ? "You've Arrived!" : "Delivery Complete!";
-    const descriptionText = active-Tab === 'transit' ? "We hope you had a pleasant journey." : "Enjoy your meal!";
+    const descriptionText = activeTab === 'transit' ? "We hope you had a pleasant journey." : "Enjoy your meal!";
 
     return (
         <>
