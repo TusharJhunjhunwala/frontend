@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, PersonStanding } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
-import { doc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export type ServiceState = 'IDLE' | 'SEARCHING' | 'PROVIDER_EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED';
@@ -36,6 +36,8 @@ export type RideRequestData = {
 };
 
 export type DeliveryRequestData = {
+  name: string;
+  phone: string;
   pickupPoint: string;
   item: string;
   deliverTo:string;
@@ -54,7 +56,7 @@ export default function Home() {
   const [showStatusScreen, setShowStatusScreen] = useState(false);
   const [isAgentOnline, setIsAgentOnline] = useState(false);
   const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
-  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false); // No longer fetching from DB
+  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(true);
 
   // Centralized real-time listener for all open delivery requests
   useEffect(() => {

@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch, ChevronLeft } from 'lucide-react';
+import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch, ChevronLeft, User, Phone } from 'lucide-react';
 import type { ServiceState, Provider, RideRequestData, DeliveryRequestData } from '@/app/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -67,6 +67,8 @@ const rideRequestSchema = z.object({
 });
 
 const deliveryRequestSchema = z.object({
+    name: z.string().min(2, "Name is required"),
+    phone: z.string().regex(/^\d{10}$/, 'Valid 10-digit phone is required.'),
     pickupPoint: z.string().min(2, "Required"),
     item: z.string().min(2, "Required"),
     deliverTo: z.string().min(3, "Required"),
@@ -179,7 +181,7 @@ function TransitView() {
 function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanelProps, 'onRequestDelivery' | 'isSubmitting'>) {
     const form = useForm<z.infer<typeof deliveryRequestSchema>>({
         resolver: zodResolver(deliveryRequestSchema),
-        defaultValues: { pickupPoint: 'Foodys', item: 'Paneer Roll', deliverTo: 'MH-Q Block', offerFee: '20' },
+        defaultValues: { name: '', phone: '', pickupPoint: 'Foodys', item: 'Paneer Roll', deliverTo: 'MH-Q Block', offerFee: '20' },
     });
 
     function onSubmit(data: z.infer<typeof deliveryRequestSchema>) {
@@ -189,6 +191,34 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Name</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Your Name" {...field} />
+                                </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+                  <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Phone</FormLabel>
+                              <FormControl>
+                                  <Input placeholder="10-digit number" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                       control={form.control}
@@ -373,11 +403,19 @@ function AgentView({ isAgentOnline, setIsAgentOnline, deliveryRequests, isFetchi
                     <CardTitle className="text-base">{req.item}</CardTitle>
                     <CardDescription>From: {req.pickupPoint} | To: {req.deliverTo}</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex justify-between items-center text-sm">
-                    <div>
-                      <p>Fee: <span className="font-bold">₹{req.offerFee}</span></p>
-                    </div>
-                    <Button onClick={() => handleAcceptJob(req)}>Accept</Button>
+                  <CardContent className="space-y-2 text-sm">
+                     <div className="flex items-center justify-between">
+                       <p className="text-muted-foreground flex items-center gap-2"><User /> Name</p>
+                       <span className="font-medium">{req.name}</span>
+                     </div>
+                     <div className="flex items-center justify-between">
+                       <p className="text-muted-foreground flex items-center gap-2"><Phone /> Phone</p>
+                       <span className="font-medium">{req.phone}</span>
+                     </div>
+                     <div className="flex items-center justify-between mt-3">
+                       <p>Fee: <span className="font-bold">₹{req.offerFee}</span></p>
+                       <Button onClick={() => handleAcceptJob(req)}>Accept</Button>
+                     </div>
                   </CardContent>
                 </Card>
               ))}

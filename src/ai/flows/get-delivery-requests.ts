@@ -15,6 +15,8 @@ import { db } from '@/lib/firebase';
 
 const DeliveryRequestSchema = z.object({
   id: z.string(),
+  name: z.string().optional(),
+  phone: z.string().optional(),
   pickupPoint: z.string(),
   item: z.string(),
   deliverTo: z.string(),
