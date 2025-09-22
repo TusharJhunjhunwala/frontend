@@ -28,14 +28,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch } from 'lucide-react';
+import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch, ShieldCheck, History, Bike } from 'lucide-react';
 import type { ServiceState, Provider, RideRequestData, DeliveryRequestData } from '@/app/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { CampusMap } from './campus-map';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
+import { Switch } from './ui/switch';
+import { Label } from './ui/label';
 
 
 type RidePanelProps = {
@@ -289,7 +291,7 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-2 gap-4">
+                {paymentMethod === 'upi' && (
                     <FormField
                         control={form.control}
                         name="upiId"
@@ -297,19 +299,13 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                             <FormItem>
                                 <FormLabel>Your UPI ID</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="you@upi" {...field} disabled={paymentMethod === 'cod'} />
+                                    <Input placeholder="you@upi" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
                     />
-                     <FormItem>
-                        <FormLabel>Carrier UPI (after match)</FormLabel>
-                        <FormControl>
-                            <Input placeholder="carrier@upi" disabled />
-                        </FormControl>
-                    </FormItem>
-                </div>
+                )}
                 <Button type="submit" className="w-full !mt-6" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Find a deliverer
@@ -324,73 +320,94 @@ function AgentView({
   isFetchingDeliveries,
   deliveryRequests,
 }: Pick<RidePanelProps, 'onFetchDeliveries' | 'isFetchingDeliveries' | 'deliveryRequests'>) {
-  const [isReady, setIsReady] = useState(false);
+  const [isOnline, setIsOnline] = useState(false);
 
-  const handleReadyClick = () => {
-    onFetchDeliveries();
-    setIsReady(true);
-  };
-
-  if (!isReady) {
-    return (
-      <div className="text-center space-y-4 py-8">
-        <CardTitle>Become a Deliverer</CardTitle>
-        <CardDescription>
-          Ready to earn? Click the button below to see available delivery jobs
-          on campus.
-        </CardDescription>
-        <Button onClick={handleReadyClick} disabled={isFetchingDeliveries} size="lg">
-          {isFetchingDeliveries ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <PackageSearch className="mr-2" />
-          )}
-          I am ready to deliver
-        </Button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (isOnline) {
+      onFetchDeliveries();
+    }
+  }, [isOnline, onFetchDeliveries]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Open Delivery Requests</h3>
-        <Button variant="ghost" size="sm" onClick={onFetchDeliveries} disabled={isFetchingDeliveries}>
-           {isFetchingDeliveries ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
-        </Button>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-bold">Agent Dashboard</h3>
+        <p className="text-muted-foreground text-sm">Manage your availability and view your delivery history.</p>
       </div>
-      {isFetchingDeliveries && deliveryRequests.length === 0 ? (
-         <div className="text-center py-8">
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="text-muted-foreground mt-2">Looking for jobs...</p>
-         </div>
-      ) : deliveryRequests.length > 0 ? (
-        <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-          {deliveryRequests.map((req) => (
-            <Card key={req.id}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">
-                  {req.item}
-                </CardTitle>
-                <CardDescription>
-                  From: {req.restaurant} | To: {req.deliverTo}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex justify-between items-center text-sm">
-                <div>
-                  <p>Fee: <span className="font-bold">₹{req.offerFee}</span></p>
-                  <p>Max Extra: <span className="font-bold">₹{req.maxExtra}</span></p>
-                </div>
-                <Button>Accept</Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8 border rounded-lg bg-muted/50">
-           <PackageCheck className="mx-auto h-8 w-8 text-muted-foreground" />
-           <p className="text-muted-foreground mt-2">No delivery requests right now.</p>
-           <p className="text-xs text-muted-foreground">Check back soon!</p>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-3 space-y-0">
+          <ShieldCheck className="w-5 h-5 text-green-500" />
+          <CardTitle className="text-lg">Verification Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="font-semibold text-green-500">Verified</p>
+          <p className="text-sm text-muted-foreground">Your account is verified. You are ready to accept deliveries.</p>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Go Online</CardTitle>
+            <CardDescription>Toggle this switch to start or stop receiving delivery requests.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2 rounded-lg border p-3">
+              <Switch id="online-status" checked={isOnline} onCheckedChange={setIsOnline} />
+              <Label htmlFor="online-status" className="flex-grow">{isOnline ? 'You are Online' : 'You are Offline'}</Label>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button className="w-full justify-start"><History className="mr-2"/>View Delivery History</Button>
+            <Button variant="secondary" className="w-full justify-start"><Bike className="mr-2"/>Update Vehicle Info</Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {isOnline && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold">Open Delivery Requests</h3>
+            <Button variant="ghost" size="sm" onClick={onFetchDeliveries} disabled={isFetchingDeliveries}>
+              {isFetchingDeliveries ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
+            </Button>
+          </div>
+          {isFetchingDeliveries && deliveryRequests.length === 0 ? (
+            <div className="text-center py-8">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+              <p className="text-muted-foreground mt-2">Looking for jobs...</p>
+            </div>
+          ) : deliveryRequests.length > 0 ? (
+            <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
+              {deliveryRequests.map((req) => (
+                <Card key={req.id}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{req.item}</CardTitle>
+                    <CardDescription>From: {req.restaurant} | To: {req.deliverTo}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex justify-between items-center text-sm">
+                    <div>
+                      <p>Fee: <span className="font-bold">₹{req.offerFee}</span></p>
+                      <p>Max Extra: <span className="font-bold">₹{req.maxExtra}</span></p>
+                    </div>
+                    <Button>Accept</Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 border rounded-lg bg-muted/50">
+              <PackageCheck className="mx-auto h-8 w-8 text-muted-foreground" />
+              <p className="text-muted-foreground mt-2">No delivery requests right now.</p>
+              <p className="text-xs text-muted-foreground">Check back soon!</p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -451,8 +468,9 @@ function RequestView(props: RidePanelProps) {
 
 
 function SearchingView({ onCancel, activeTab }: Pick<RidePanelProps, 'onCancel' | 'activeTab'>) {
-  const titleText = activeTab === 'transit' ? 'Finding Your Ride' : 'Finding a Deliverer';
-  const descriptionText = activeTab === 'transit' ? 'Please wait while we connect you to a driver.' : 'Please wait while we find an agent for your delivery.';
+  const titleText = activeTab === 'delivery' ? 'Finding a Deliverer' : 'Finding Your Ride';
+  const descriptionText = activeTab === 'delivery' ? 'Please wait while we find an agent for your delivery.' : 'Please wait while we connect you to a driver.';
+
 
   return (
     <>
@@ -529,7 +547,7 @@ function InProgressView({ destination, eta, activeTab }: Pick<RidePanelProps, 'd
 
 function CompletedView({ onReset, activeTab }: Pick<RidePanelProps, 'onReset' | 'activeTab'>) {
     const titleText = activeTab === 'transit' ? "You've Arrived!" : "Delivery Complete!";
-    const descriptionText = activeTab === 'transit' ? "We hope you had a pleasant journey." : "Enjoy your meal!";
+    const descriptionText = active-Tab === 'transit' ? "We hope you had a pleasant journey." : "Enjoy your meal!";
 
     return (
         <>
