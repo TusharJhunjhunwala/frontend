@@ -113,9 +113,36 @@ function TransitView() {
                   </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="main-gate">Main Gate</SelectItem>
-                    <SelectItem value="sjt">SJT</SelectItem>
                     <SelectItem value="tt">TT</SelectItem>
+                    <SelectItem value="prp">PRP</SelectItem>
+                    <SelectItem value="sjt">SJT</SelectItem>
+                    <SelectItem value="foodys">Foodys</SelectItem>
+                    <SelectItem value="main-building">Main Building</SelectItem>
+                    <SelectItem value="smv">SMV</SelectItem>
+                    <SelectItem value="mh-q">MH-Q</SelectItem>
+                    <SelectItem value="mh-k">MH-K</SelectItem>
+                    <SelectItem value="mh-l">MH-L</SelectItem>
+                    <SelectItem value="mh-a">MH-A</SelectItem>
+                    <SelectItem value="mh-b">MH-B</SelectItem>
+                    <SelectItem value="mh-c">MH-C</SelectItem>
+                    <SelectItem value="mh-d">MH-D</SelectItem>
+                    <SelectItem value="mh-e">MH-E</SelectItem>
+                    <SelectItem value="mh-f">MH-F</SelectItem>
+                    <SelectItem value="mh-g">MH-G</SelectItem>
+                    <SelectItem value="mh-h">MH-H</SelectItem>
+                    <SelectItem value="mh-j">MH-J</SelectItem>
+                    <SelectItem value="mh-m">MH-M</SelectItem>
+                    <SelectItem value="mh-n">MH-N</SelectItem>
+                    <SelectItem value="mh-p">MH-P</SelectItem>
+                    <SelectItem value="mh-r">MH-R</SelectItem>
+                    <SelectItem value="lh-a">LH-A (Sarojini)</SelectItem>
+                    <SelectItem value="lh-b">LH-B (Ramayanam)</SelectItem>
+                    <SelectItem value="lh-c">LH-C (Mahabharat)</SelectItem>
+                    <SelectItem value="lh-d">LH-D</SelectItem>
+                    <SelectItem value="lh-e">LH-E</SelectItem>
+                    <SelectItem value="lh-f">LH-F</SelectItem>
+                    <SelectItem value="lh-g">LH-G</SelectItem>
+                    <SelectItem value="lh-h">LH-H</SelectItem>
                   </SelectContent>
               </Select>
             </FormItem>
