@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch, ShieldCheck, History, Bike } from 'lucide-react';
+import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch, ShieldCheck, History, Phone, MessageSquare } from 'lucide-react';
 import type { ServiceState, Provider, RideRequestData, DeliveryRequestData } from '@/app/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -38,7 +38,6 @@ import { useState, useEffect } from 'react';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
-
 
 type RidePanelProps = {
   serviceState: ServiceState;
@@ -62,11 +61,10 @@ const rideRequestSchema = z.object({
 });
 
 const deliveryRequestSchema = z.object({
-    restaurant: z.string().min(2, "Required"),
+    pickupPoint: z.string().min(2, "Required"),
     item: z.string().min(2, "Required"),
     deliverTo: z.string().min(3, "Required"),
     offerFee: z.string().min(1, "Required"),
-    paymentMethod: z.enum(["upi", "cod"]),
 });
 
 const transitSchema = z.object({
@@ -175,10 +173,8 @@ function TransitView() {
 function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanelProps, 'onRequestDelivery' | 'isSubmitting'>) {
     const form = useForm<z.infer<typeof deliveryRequestSchema>>({
         resolver: zodResolver(deliveryRequestSchema),
-        defaultValues: { restaurant: 'Foodys', item: 'Paneer Roll', deliverTo: 'MH Block', offerFee: '20', paymentMethod: 'upi' },
+        defaultValues: { pickupPoint: 'Foodys', item: 'Paneer Roll', deliverTo: 'MH Block', offerFee: '20' },
     });
-
-    const paymentMethod = form.watch('paymentMethod');
 
     function onSubmit(data: z.infer<typeof deliveryRequestSchema>) {
         onRequestDelivery(data as DeliveryRequestData);
@@ -190,22 +186,13 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                       control={form.control}
-                      name="restaurant"
+                      name="pickupPoint"
                       render={({ field }) => (
                           <FormItem>
-                              <FormLabel>Restaurant</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select" />
-                                    </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                    <SelectItem value="Foodys">Foodys</SelectItem>
-                                    <SelectItem value="Darling">Darling</SelectItem>
-                                    <SelectItem value="Limra">Limra</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                              <FormLabel>Pick up Point</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="e.g., Foodys" {...field} />
+                                </FormControl>
                               <FormMessage />
                           </FormItem>
                       )}
@@ -250,27 +237,12 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                         </FormItem>
                     )}
                 />
-                 <FormField
-                  control={form.control}
-                  name="paymentMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Payment method</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select payment method" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="upi">UPI</SelectItem>
-                          <SelectItem value="cod">Cash on Delivery</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                 <FormItem>
+                    <FormLabel>Payment method</FormLabel>
+                    <FormControl>
+                        <Input value="Pay on delivery" readOnly disabled />
+                    </FormControl>
+                </FormItem>
                 <Button type="submit" className="w-full !mt-6" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Find a deliverer
@@ -280,18 +252,78 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
     )
 }
 
+function AgentAcceptedView({ onComplete }: { onComplete: () => void }) {
+  const requester = {
+    name: 'Aarav Sharma',
+    phone: '9876543210',
+    block: 'Q Block',
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-bold">Delivery Accepted!</h3>
+        <p className="text-muted-foreground text-sm">You are on your way to pick up the item.</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Requester Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Name</span>
+            <span className="font-medium">{requester.name}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Phone</span>
+            <span className="font-medium">{requester.phone}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Block</span>
+            <span className="font-medium">{requester.block}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4">
+        <Button variant="outline"><Phone className="mr-2" /> Call Requester</Button>
+        <Button><MessageSquare className="mr-2" /> Chat with Requester</Button>
+      </div>
+      
+      <Button className="w-full" onClick={onComplete}>Mark as Completed</Button>
+    </div>
+  );
+}
+
+
 function AgentView({
   onFetchDeliveries,
   isFetchingDeliveries,
   deliveryRequests,
 }: Pick<RidePanelProps, 'onFetchDeliveries' | 'isFetchingDeliveries' | 'deliveryRequests'>) {
   const [isOnline, setIsOnline] = useState(false);
+  const [acceptedJob, setAcceptedJob] = useState<DeliveryRequest | null>(null);
 
   useEffect(() => {
-    if (isOnline) {
+    if (isOnline && !acceptedJob) {
       onFetchDeliveries();
     }
-  }, [isOnline, onFetchDeliveries]);
+  }, [isOnline, onFetchDeliveries, acceptedJob]);
+
+  const handleAcceptJob = (req: DeliveryRequest) => {
+    setAcceptedJob(req);
+  }
+  
+  const handleCompleteJob = () => {
+    setAcceptedJob(null);
+    // Potentially set isOnline to false or refresh deliveries
+  }
+
+  if (acceptedJob) {
+    return <AgentAcceptedView onComplete={handleCompleteJob} />;
+  }
+
 
   return (
     <div className="space-y-6">
@@ -358,9 +390,8 @@ function AgentView({
                   <CardContent className="flex justify-between items-center text-sm">
                     <div>
                       <p>Fee: <span className="font-bold">₹{req.offerFee}</span></p>
-                      <p>Max Extra: <span className="font-bold">₹{req.maxExtra}</span></p>
                     </div>
-                    <Button>Accept</Button>
+                    <Button onClick={() => handleAcceptJob(req)}>Accept</Button>
                   </CardContent>
                 </Card>
               ))}
@@ -541,5 +572,3 @@ export function RidePanel(props: RidePanelProps) {
     </Card>
   );
 }
-
-    

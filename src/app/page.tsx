@@ -36,11 +36,10 @@ export type RideRequestData = {
 };
 
 export type DeliveryRequestData = {
-  restaurant: string;
+  pickupPoint: string;
   item: string;
   deliverTo: string;
   offerFee: string;
-  paymentMethod: 'upi' | 'cod';
 };
 
 export default function Home() {
@@ -146,7 +145,7 @@ export default function Home() {
   const features = [
     "Live shuttle & auto ETAs",
     "GPS tracking on campus",
-    "Peer-to-peer food drops",
+    "P2P goods delivery",
     "Simple and fast"
   ];
 
@@ -161,7 +160,7 @@ export default function Home() {
               VIT Vellore campus • Live ETAs
             </Badge>
             <h1 className="text-4xl lg:text-5xl font-bold font-headline tracking-tighter">
-              VITransit: shuttles and autos with live location. P2P food drops between students.
+              VITransit: shuttles and autos with live location. P2P goods delivery between students.
             </h1>
             <p className="text-lg text-muted-foreground">
               See next arrival at your stop, and get meals picked up by peers on their way back to hostel.

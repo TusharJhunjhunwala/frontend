@@ -17,10 +17,6 @@ export function AppHeader() {
               </span>
             </Link>
           </div>
-          <nav className="hidden md:flex items-center gap-2">
-            <Button variant="link" className="text-foreground/80 hover:text-foreground">Transit</Button>
-            <Button variant="link" className="text-foreground/80 hover:text-foreground">Delivery</Button>
-          </nav>
           <div className="flex items-center gap-4">
             <AgentRegistrationForm />
             <AuthForm />

@@ -15,11 +15,10 @@ import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const CreateDeliveryRequestInputSchema = z.object({
-  restaurant: z.string(),
+  pickupPoint: z.string(),
   item: z.string(),
   deliverTo: z.string(),
   offerFee: z.string(),
-  paymentMethod: z.enum(['upi', 'cod']),
 });
 export type CreateDeliveryRequestInput = z.infer<typeof CreateDeliveryRequestInputSchema>;
 
@@ -41,15 +40,17 @@ const createDeliveryRequestFlow = ai.defineFlow(
   },
   async (input) => {
     const deliveryRequestRef = await addDoc(collection(db, 'deliveryRequests'), {
-        ...input,
-        maxExtra: '', // Default to empty string as it's removed from form
-        upiId: '', // Default to empty string as it's removed from form
+        restaurant: input.pickupPoint, // Map pickupPoint to restaurant for db
+        item: input.item,
+        deliverTo: input.deliverTo,
+        offerFee: input.offerFee,
+        paymentMethod: 'cod', // Always pay on delivery
         status: 'SEARCHING',
         createdAt: new Date().toISOString(),
     });
 
     const etaInput: PredictDeliveryETAInput = {
-        restaurantLocation: input.restaurant,
+        restaurantLocation: input.pickupPoint,
         dropOffLocation: input.deliverTo,
         trafficConditions: 'moderate',
     };
@@ -61,5 +62,3 @@ const createDeliveryRequestFlow = ai.defineFlow(
     };
   }
 );
-
-    
