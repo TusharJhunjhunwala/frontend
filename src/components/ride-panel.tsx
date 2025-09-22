@@ -1,6 +1,6 @@
 'use client';
 import { z } from 'zod';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Card,
@@ -38,6 +38,9 @@ import {
 } from "@/components/ui/chart"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import Image from 'next/image';
+import { LiveVehicleMarker } from './live-vehicle-marker';
 
 
 type RidePanelProps = {
@@ -88,6 +91,8 @@ const vehicleData = [
   { vehicle: 'S1', type: 'Shuttle', eta: '7 min', icon: <Bus /> },
   { vehicle: 'A1', type: 'Auto', eta: '3 min', icon: <Car /> },
   { vehicle: 'A2', type: 'Auto', eta: '1 min', icon: <Car /> },
+  { vehicle: 'S2', type: 'Shuttle', eta: '12 min', icon: <Bus /> },
+  { vehicle: 'A3', type: 'Auto', eta: '5 min', icon: <Car /> },
 ]
 
 
@@ -96,9 +101,11 @@ function TransitView() {
     resolver: zodResolver(transitSchema),
     defaultValues: { stop: "main-gate" },
   });
+  
+  const mapImageUrl = PlaceHolderImages.find(img => img.id === 'map-background')?.imageUrl || '';
 
   return (
-    <Form {...form}>
+    <FormProvider {...form}>
       <form className="space-y-4">
         <FormField
           control={form.control}
@@ -148,9 +155,15 @@ function TransitView() {
             </FormItem>
           )}
         />
+        <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
+            <Image src={mapImageUrl} alt="VIT Vellore Map" layout="fill" objectFit="cover" data-ai-hint="satellite map campus" />
+            {vehicleData.map((v) => (
+                <LiveVehicleMarker key={v.vehicle} type={v.type as 'Shuttle' | 'Auto'} />
+            ))}
+        </div>
 
-        <div className="grid grid-cols-2 gap-4 items-start">
-          <div>
+        <div className="space-y-2">
+            <h3 className="text-sm font-medium">Vehicles arriving at your stop</h3>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -169,40 +182,10 @@ function TransitView() {
                 ))}
               </TableBody>
             </Table>
-            <p className="text-xs text-muted-foreground mt-2">Live location updated every 0.5s. ETAs are estimated.</p>
-          </div>
-          
-          <div className="aspect-square h-[180px] w-full">
-              <ChartContainer config={{}} className="h-full w-full">
-                <AreaChart
-                  accessibilityLayer
-                  data={chartData}
-                  margin={{
-                    left: -20,
-                    right: 10,
-                    top: 5,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid vertical={false} strokeDasharray="4 4" className="stroke-border/50" />
-                  <XAxis dataKey="time" hide />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="dot" />}
-                  />
-                  <Area
-                    dataKey="value"
-                    type="natural"
-                    fill="hsl(var(--primary) / 0.1)"
-                    stroke="hsl(var(--primary))"
-                    stackId="a"
-                  />
-                </AreaChart>
-              </ChartContainer>
-          </div>
+            <p className="text-xs text-muted-foreground mt-2">Live location updated every 2s. ETAs are estimated.</p>
         </div>
       </form>
-    </Form>
+    </FormProvider>
   );
 }
 
@@ -449,7 +432,7 @@ function InProgressView({ destination, eta, activeTab }: Pick<RidePanelProps, 'd
 
 function CompletedView({ onReset, activeTab }: Pick<RidePanelProps, 'onReset' | 'activeTab'>) {
     const titleText = activeTab === 'transit' ? "You've Arrived!" : "Delivery Complete!";
-    const descriptionText = active-tab === 'transit' ? "We hope you had a pleasant journey." : "Enjoy your meal!";
+    const descriptionText = activeTab === 'transit' ? "We hope you had a pleasant journey." : "Enjoy your meal!";
 
     return (
         <>
