@@ -4,13 +4,13 @@ import { AppHeader } from '@/components/layout/app-header';
 import { RidePanel } from '@/components/ride-panel';
 import { useState, useEffect } from 'react';
 import { createRideRequest } from '@/ai/flows/create-ride-request';
+import { createDeliveryRequest } from '@/ai/flows/create-delivery-request';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, PersonStanding } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export type ServiceState = 'IDLE' | 'SEARCHING' | 'PROVIDER_EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED';
@@ -54,18 +54,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('transit');
   const [currentDeliveryId, setCurrentDeliveryId] = useState<string | null>(null);
   const [showStatusScreen, setShowStatusScreen] = useState(false);
-  const [isAgentOnline, setIsAgentOnline] = useState(false);
-  const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
-  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(true);
-
-  // Centralized real-time listener for all open delivery requests
-  useEffect(() => {
-    // This listener has been moved to manage local state only, no DB call.
-    // The isFetchingDeliveries state is set to false as we are not fetching.
-    setIsFetchingDeliveries(false);
-  }, []);
-
-
+  
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (activeTab === 'transit' && serviceState === 'SEARCHING') {
@@ -124,29 +113,40 @@ export default function Home() {
     }
   };
   
-  const handleRequestDelivery = (data: DeliveryRequestData) => {
-    const newRequest: DeliveryRequest = {
-        id: new Date().getTime().toString(), // Use timestamp for unique ID in-memory
-        ...data,
-        paymentMethod: 'cod',
-        status: 'SEARCHING',
-        createdAt: new Date().toISOString(),
-    };
-
-    setDeliveryRequests(prevRequests => [newRequest, ...prevRequests]);
-    setServiceState('SEARCHING'); 
-    setShowStatusScreen(true);
-    setDestination(data.deliverTo); 
-    setCurrentDeliveryId(newRequest.id); // For simulation purposes
-
-    toast({
-      title: 'Request Sent!',
-      description: 'Your delivery request is now visible to online agents.',
-    });
+  const handleRequestDelivery = async (data: DeliveryRequestData) => {
+    setIsSubmitting(true);
+    try {
+      const result = await createDeliveryRequest(data);
+      setCurrentDeliveryId(result.deliveryId);
+      setDestination(data.deliverTo);
+      setServiceState('SEARCHING');
+      setShowStatusScreen(true);
+       toast({
+        title: 'Request Sent!',
+        description: 'Your delivery request is now visible to online agents.',
+      });
+    } catch (error) {
+       console.error(error);
+       toast({
+        variant: 'destructive',
+        title: 'Error Requesting Delivery',
+        description: 'Could not save your request. Please try again.',
+      });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
+    if (activeTab === 'delivery' && currentDeliveryId) {
+      try {
+        const docRef = doc(db, 'deliveryRequests', currentDeliveryId);
+        await updateDoc(docRef, { status: 'CANCELLED' });
+      } catch (error) {
+        console.error("Error cancelling delivery:", error);
+      }
+    }
     setServiceState('IDLE');
     setDestination('');
     setEta(null);
@@ -159,15 +159,17 @@ export default function Home() {
     handleCancel();
   };
 
-  const handleAcceptDelivery = (requestId: string) => {
-    setDeliveryRequests(prev => prev.filter(req => req.id !== requestId));
-    // Simulate agent assignment for the requester's view
-    if (requestId === currentDeliveryId) {
-        setServiceState('PROVIDER_EN_ROUTE');
-        setProvider(MOCK_PROVIDER);
+  const handleAcceptDelivery = async (requestId: string) => {
+    try {
+      const docRef = doc(db, 'deliveryRequests', requestId);
+      await updateDoc(docRef, { status: 'AGENT_ASSIGNED' });
+       // The agent's local state will handle showing the "accepted" view.
+       // No need to change global state here.
+    } catch (error) {
+      console.error("Error accepting job:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not accept the job.' });
     }
   };
-
 
   const features = [
     "Live shuttle & auto ETAs",
@@ -223,10 +225,6 @@ export default function Home() {
               setActiveTab={setActiveTab}
               showStatusScreen={showStatusScreen}
               setShowStatusScreen={setShowStatusScreen}
-              isAgentOnline={isAgentOnline}
-              setIsAgentOnline={setIsAgentOnline}
-              deliveryRequests={deliveryRequests}
-              isFetchingDeliveries={isFetchingDeliveries}
             />
           </div>
         </div>

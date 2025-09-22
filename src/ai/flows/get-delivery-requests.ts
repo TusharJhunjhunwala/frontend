@@ -43,12 +43,9 @@ const getDeliveryRequestsFlow = ai.defineFlow(
     outputSchema: GetDeliveryRequestsOutputSchema,
   },
   async () => {
-    // Query for searching requests, and order them by creation date descending.
-    // Firestore may require a composite index for this query.
     const q = query(
         collection(db, 'deliveryRequests'), 
-        where('status', '==', 'SEARCHING'),
-        orderBy('createdAt', 'desc')
+        where('status', '==', 'SEARCHING')
     );
     const querySnapshot = await getDocs(q);
     const requests: DeliveryRequest[] = [];
@@ -56,6 +53,8 @@ const getDeliveryRequestsFlow = ai.defineFlow(
       const data = doc.data();
       requests.push({
         id: doc.id,
+        name: data.name,
+        phone: data.phone,
         pickupPoint: data.pickupPoint,
         item: data.item,
         deliverTo: data.deliverTo,
@@ -65,6 +64,9 @@ const getDeliveryRequestsFlow = ai.defineFlow(
         createdAt: data.createdAt,
       });
     });
+
+    // Sort by date descending, newest first
+    requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const validationResult = GetDeliveryRequestsOutputSchema.safeParse({ requests });
     if (!validationResult.success) {

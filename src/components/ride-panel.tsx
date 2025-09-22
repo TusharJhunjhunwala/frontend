@@ -28,17 +28,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch, ChevronLeft, User, Phone } from 'lucide-react';
+import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch, ChevronLeft, User, Phone, Edit, Trash2 } from 'lucide-react';
 import type { ServiceState, Provider, RideRequestData, DeliveryRequestData } from '@/app/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { CampusMap } from './campus-map';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { collection, onSnapshot, query, where, doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 
 type RidePanelProps = {
@@ -48,18 +50,14 @@ type RidePanelProps = {
   eta: string | null;
   isSubmitting: boolean;
   onRequestRide: (data: RideRequestData) => void;
-  onRequestDelivery: (data: DeliveryRequestData) => void;
-  onAcceptDelivery: (id: string) => void;
+  onRequestDelivery: (data: DeliveryRequestData) => Promise<void>;
+  onAcceptDelivery: (id: string) => Promise<void>;
   onCancel: () => void;
   onReset: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   showStatusScreen: boolean;
   setShowStatusScreen: (show: boolean) => void;
-  isAgentOnline: boolean;
-  setIsAgentOnline: (isOnline: boolean) => void;
-  deliveryRequests: DeliveryRequest[];
-  isFetchingDeliveries: boolean;
 };
 
 const rideRequestSchema = z.object({
@@ -291,8 +289,8 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
 function AgentAcceptedView({ onComplete, request }: { onComplete: () => void, request: DeliveryRequest }) {
   // In a real app, requester details would be fetched based on a userId stored in the request
   const requester = {
-    name: 'Aarav Sharma',
-    phone: '9876543210',
+    name: request.name || 'N/A',
+    phone: request.phone || 'N/A',
     block: request.deliverTo,
   };
 
@@ -308,6 +306,14 @@ function AgentAcceptedView({ onComplete, request }: { onComplete: () => void, re
           <CardTitle className="text-lg">Delivery Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+           <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Requester</span>
+            <span className="font-medium">{requester.name}</span>
+          </div>
+           <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Phone</span>
+            <span className="font-medium">{requester.phone}</span>
+          </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Item</span>
             <span className="font-medium">{request.item}</span>
@@ -333,25 +339,64 @@ function AgentAcceptedView({ onComplete, request }: { onComplete: () => void, re
 }
 
 
-function AgentView({ isAgentOnline, setIsAgentOnline, deliveryRequests, isFetchingDeliveries, onAcceptDelivery }: Pick<RidePanelProps, 'isAgentOnline' | 'setIsAgentOnline' | 'deliveryRequests' | 'isFetchingDeliveries' | 'onAcceptDelivery'>) {
+function AgentView({ onAcceptDelivery }: Pick<RidePanelProps, 'onAcceptDelivery'>) {
+  const [isAgentOnline, setIsAgentOnline] = useState(false);
+  const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
+  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false);
   const [acceptedJob, setAcceptedJob] = useState<DeliveryRequest | null>(null);
   const { toast } = useToast();
 
-  const handleAcceptJob = async (req: DeliveryRequest) => {
-    try {
-      onAcceptDelivery(req.id);
-      setAcceptedJob(req);
-    } catch (error) {
-        console.error("Error accepting job: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not accept the job.' });
+  useEffect(() => {
+    if (!isAgentOnline) {
+      setDeliveryRequests([]);
+      return;
     }
+
+    setIsFetchingDeliveries(true);
+    const q = query(collection(db, "deliveryRequests"), where("status", "==", "SEARCHING"));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const requests: DeliveryRequest[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        requests.push({
+          id: doc.id,
+          pickupPoint: data.pickupPoint,
+          item: data.item,
+          deliverTo: data.deliverTo,
+          offerFee: data.offerFee,
+          paymentMethod: data.paymentMethod,
+          status: data.status,
+          createdAt: data.createdAt,
+          name: data.name,
+          phone: data.phone,
+        });
+      });
+      // Sort by newest first
+      requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setDeliveryRequests(requests);
+      setIsFetchingDeliveries(false);
+    }, (error) => {
+      console.error("Error fetching delivery requests:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch delivery requests.' });
+      setIsFetchingDeliveries(false);
+    });
+
+    return () => unsubscribe();
+  }, [isAgentOnline, toast]);
+
+
+  const handleAcceptJob = async (req: DeliveryRequest) => {
+    await onAcceptDelivery(req.id);
+    setAcceptedJob(req);
   }
   
   const handleCompleteJob = async () => {
     if (!acceptedJob) return;
     try {
-      // In a real DB-backed app, you would update the status to COMPLETED here.
-      setAcceptedJob(null); // Return to the list of open requests
+      const docRef = doc(db, 'deliveryRequests', acceptedJob.id);
+      await updateDoc(docRef, { status: 'COMPLETED' });
+      setAcceptedJob(null);
       toast({ title: 'Success', description: 'Delivery marked as complete.' });
     } catch (error) {
         console.error("Error completing job: ", error);
@@ -405,12 +450,12 @@ function AgentView({ isAgentOnline, setIsAgentOnline, deliveryRequests, isFetchi
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm">
                      <div className="flex items-center justify-between">
-                       <p className="text-muted-foreground flex items-center gap-2"><User /> Name</p>
-                       <span className="font-medium">{req.name}</span>
+                       <p className="text-muted-foreground flex items-center gap-2"><User className="w-4 h-4" /> Name</p>
+                       <span className="font-medium">{req.name || 'Not provided'}</span>
                      </div>
                      <div className="flex items-center justify-between">
-                       <p className="text-muted-foreground flex items-center gap-2"><Phone /> Phone</p>
-                       <span className="font-medium">{req.phone}</span>
+                       <p className="text-muted-foreground flex items-center gap-2"><Phone className="w-4 h-4" /> Phone</p>
+                       <span className="font-medium">{req.phone || 'Not provided'}</span>
                      </div>
                      <div className="flex items-center justify-between mt-3">
                        <p>Fee: <span className="font-bold">₹{req.offerFee}</span></p>

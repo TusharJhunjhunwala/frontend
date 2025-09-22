@@ -14,6 +14,8 @@ import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const CreateDeliveryRequestInputSchema = z.object({
+  name: z.string().describe("The name of the person requesting the delivery."),
+  phone: z.string().describe("The phone number of the person requesting the delivery."),
   pickupPoint: z.string().describe('The location where the item should be picked up.'),
   item: z.string().describe('The item to be delivered.'),
   deliverTo: z.string().describe('The final delivery destination.'),
@@ -39,6 +41,8 @@ const createDeliveryRequestFlow = ai.defineFlow(
   async (input) => {
     // 1. Save the delivery request to Firestore with 'SEARCHING' status.
     const deliveryRequestRef = await addDoc(collection(db, 'deliveryRequests'), {
+        name: input.name,
+        phone: input.phone,
         pickupPoint: input.pickupPoint,
         item: input.item,
         deliverTo: input.deliverTo,
