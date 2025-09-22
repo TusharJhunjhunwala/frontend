@@ -99,9 +99,12 @@ export default function Home() {
         setServiceState('PROVIDER_EN_ROUTE');
       }, 4000);
     } else if (serviceState === 'PROVIDER_EN_ROUTE') {
-      timer = setTimeout(() => {
-        setServiceState('IN_PROGRESS');
-      }, 8000);
+      // This part now only applies to transit, as delivery is handled by the Firestore listener
+      if (activeTab === 'transit') {
+        timer = setTimeout(() => {
+          setServiceState('IN_PROGRESS');
+        }, 8000);
+      }
     } else if (serviceState === 'IN_PROGRESS') {
       const etaMinutes = eta ? parseInt(eta, 10) : 10;
       // Simulate completion based on ETA
@@ -112,13 +115,14 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [serviceState, eta, activeTab]);
 
-  // Firestore listener for delivery status
+  // Firestore listener for delivery status changes (for the requester)
   useEffect(() => {
     if (currentDeliveryId && serviceState === 'SEARCHING') {
       const unsub = onSnapshot(doc(db, "deliveryRequests", currentDeliveryId), (doc) => {
         const data = doc.data();
         if (data && data.status === 'AGENT_ASSIGNED') {
           // A real provider object would come from the agent who accepted.
+          // For now, we use a mock provider.
           setProvider(MOCK_PROVIDER); 
           setServiceState('PROVIDER_EN_ROUTE');
         }
@@ -158,6 +162,7 @@ export default function Home() {
     // Then, run the backend call in the background.
     try {
       const result = await createDeliveryRequest(data);
+      // Store the delivery ID to listen for status updates
       setCurrentDeliveryId(result.deliveryId);
     } catch (error) {
       console.error(error);

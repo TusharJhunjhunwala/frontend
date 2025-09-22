@@ -176,7 +176,7 @@ function TransitView() {
 function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanelProps, 'onRequestDelivery' | 'isSubmitting'>) {
     const form = useForm<z.infer<typeof deliveryRequestSchema>>({
         resolver: zodResolver(deliveryRequestSchema),
-        defaultValues: { pickupPoint: 'Foodys', item: 'Paneer Roll', deliverTo: 'MH Block', offerFee: '20' },
+        defaultValues: { pickupPoint: 'Foodys', item: 'Paneer Roll', deliverTo: 'MH-Q Block', offerFee: '20' },
     });
 
     function onSubmit(data: z.infer<typeof deliveryRequestSchema>) {
@@ -221,7 +221,7 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                         <FormItem>
                             <FormLabel>Deliver to</FormLabel>
                             <FormControl>
-                                <Input placeholder="e.g., MH Block" {...field} />
+                                <Input placeholder="e.g., MH-Q Block" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -555,7 +555,7 @@ function InProgressView({ destination, eta, activeTab }: Pick<RidePanelProps, 'd
             </CardHeader>
             <CardContent className="text-center">
                 <p className="text-muted-foreground">Estimated arrival in</p>
-                <p className="text-4xl font-bold font-headline text-primary">{eta} min</p>
+                <p className="text-4xl font-bold font-headline text-primary">{eta || '~15'} min</p>
                 <p className="text-sm text-muted-foreground mt-2">(Predicted by VITransit AI)</p>
             </CardContent>
         </>
@@ -594,7 +594,8 @@ export function RidePanel(props: RidePanelProps) {
   const { serviceState, provider, destination, eta, onCancel, onReset, activeTab, showStatusScreen, setShowStatusScreen } = props;
 
   const renderContent = () => {
-    if (showStatusScreen || (serviceState !== 'IDLE' && activeTab === 'transit')) {
+    // If the status screen should be shown (for active deliveries or rides)
+    if (showStatusScreen) {
         switch (serviceState) {
           case 'SEARCHING':
             return <SearchingView onCancel={onCancel} onBack={() => setShowStatusScreen(false)} activeTab={activeTab} />;
@@ -605,10 +606,13 @@ export function RidePanel(props: RidePanelProps) {
           case 'COMPLETED':
             return <CompletedView onReset={onReset} activeTab={activeTab} />;
           default:
-             return <RequestView {...props} />; // Fallback to request view
+             // This case should ideally not be reached if showStatusScreen is true,
+             // but as a fallback, show the request view.
+             return <RequestView {...props} />;
         }
     }
     
+    // Default view when no active process is being monitored on screen
     return <RequestView {...props} />;
   };
 
