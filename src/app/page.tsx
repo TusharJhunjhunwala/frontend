@@ -61,25 +61,23 @@ export default function Home() {
   useEffect(() => {
     let timer: NodeJS.Timeout;
     // Only simulate ride-hailing flow for transit, not delivery
-    if (activeTab === 'transit') {
-      if (serviceState === 'SEARCHING') {
-        setShowStatusScreen(true);
-        // Simulate an agent accepting after 4 seconds for rides.
-        timer = setTimeout(() => {
-          setProvider(MOCK_PROVIDER);
-          setServiceState('PROVIDER_EN_ROUTE');
-        }, 4000);
-      } else if (serviceState === 'PROVIDER_EN_ROUTE') {
-        timer = setTimeout(() => {
-          setServiceState('IN_PROGRESS');
-        }, 8000);
-      } else if (serviceState === 'IN_PROGRESS') {
-        const etaMinutes = eta ? parseInt(eta, 10) : 10;
-        // Simulate completion based on ETA
-        timer = setTimeout(() => {
-          setServiceState('COMPLETED');
-        }, etaMinutes * 1000 * 0.5 + 5000);
-      }
+    if (activeTab === 'transit' && serviceState === 'SEARCHING') {
+      setShowStatusScreen(true);
+      // Simulate an agent accepting after 4 seconds for rides.
+      timer = setTimeout(() => {
+        setProvider(MOCK_PROVIDER);
+        setServiceState('PROVIDER_EN_ROUTE');
+      }, 4000);
+    } else if (serviceState === 'PROVIDER_EN_ROUTE') {
+      timer = setTimeout(() => {
+        setServiceState('IN_PROGRESS');
+      }, 8000);
+    } else if (serviceState === 'IN_PROGRESS') {
+      const etaMinutes = eta ? parseInt(eta, 10) : 10;
+      // Simulate completion based on ETA
+      timer = setTimeout(() => {
+        setServiceState('COMPLETED');
+      }, etaMinutes * 1000 * 0.5 + 5000);
     }
     return () => clearTimeout(timer);
   }, [serviceState, eta, activeTab]);
@@ -123,10 +121,9 @@ export default function Home() {
   
   const handleRequestDelivery = async (data: DeliveryRequestData) => {
     // Immediately set the state to searching to show the waiting screen
-    setDestination(data.deliverTo);
-    setEta("~15-20"); // Set a placeholder ETA
     setServiceState('SEARCHING'); 
     setShowStatusScreen(true);
+    setDestination(data.deliverTo); // For the status screen UI
 
     // Then, run the backend call in the background.
     try {
