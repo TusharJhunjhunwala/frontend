@@ -8,7 +8,8 @@ import { predictDeliveryETA } from '@/ai/flows/predict-delivery-eta';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight } from 'lucide-react';
+import { Clock, MapPin, PersonStanding } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 
 export type ServiceState = 'IDLE' | 'SEARCHING' | 'PROVIDER_EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED';
 
@@ -30,7 +31,6 @@ const MOCK_PROVIDER: Provider = {
 
 export type RideRequestData = {
   destination: string;
-  traffic: 'light' | 'moderate' | 'heavy';
 };
 
 export type DeliveryRequestData = {
@@ -50,6 +50,7 @@ export default function Home() {
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('transit');
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -130,14 +131,21 @@ export default function Home() {
     handleCancel();
   };
 
+  const features = [
+    "Live shuttle & auto ETAs",
+    "GPS tracking on campus",
+    "Peer-to-peer food drops",
+    "Simple and fast"
+  ];
+
   return (
     <div className="flex flex-col min-h-screen bg-background font-body text-foreground">
       <AppHeader />
       <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center py-12 lg:py-20">
-          <div className="space-y-6">
-            <Badge variant="outline" className="bg-secondary text-secondary-foreground border-border">
-              <span className="w-2 h-2 mr-2 rounded-full bg-green-500 animate-pulse"></span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start py-12 lg:py-20">
+          <div className="space-y-6 pt-4">
+            <Badge variant="outline" className="bg-secondary text-secondary-foreground border-border text-sm">
+              <span className="w-2.5 h-2.5 mr-2.5 rounded-full bg-green-500 animate-pulse"></span>
               VIT Vellore campus • Live ETAs
             </Badge>
             <h1 className="text-4xl lg:text-5xl font-bold font-headline tracking-tighter">
@@ -146,13 +154,22 @@ export default function Home() {
             <p className="text-lg text-muted-foreground">
               See next arrival at your stop, and get meals picked up by peers on their way back to hostel.
             </p>
-            <div className="flex items-center gap-4">
-              <button className="text-primary font-semibold hover:underline flex items-center gap-2">
-                Learn more <ArrowRight className="w-4 h-4" />
-              </button>
+            <div className="flex items-center gap-6 text-sm text-muted-foreground pt-2">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                <span>GPS on-campus</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                <span>Real-time ETA</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <PersonStanding className="w-4 h-4" />
+                <span>Peer delivery</span>
+              </div>
             </div>
           </div>
-          <div className="lg:pt-8">
+          <div className="lg:pt-0">
             <RidePanel
               serviceState={serviceState}
               provider={provider}
@@ -163,10 +180,21 @@ export default function Home() {
               onRequestDelivery={handleRequestDelivery}
               onCancel={handleCancel}
               onReset={handleReset}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
             />
           </div>
         </div>
       </main>
+      <footer className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {features.map((feature, index) => (
+            <Card key={index} className="p-4 border-border/60 bg-transparent shadow-none">
+              <p className="text-sm font-medium">{feature}</p>
+            </Card>
+          ))}
+        </div>
+      </footer>
     </div>
   );
 }

@@ -28,9 +28,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding } from 'lucide-react';
+import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus } from 'lucide-react';
 import type { ServiceState, Provider, RideRequestData, DeliveryRequestData } from '@/app/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 type RidePanelProps = {
   serviceState: ServiceState;
@@ -42,11 +50,12 @@ type RidePanelProps = {
   onRequestDelivery: (data: DeliveryRequestData) => void;
   onCancel: () => void;
   onReset: () => void;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
 };
 
 const rideRequestSchema = z.object({
   destination: z.string().min(3, { message: 'Please enter a valid destination.' }),
-  traffic: z.enum(['light', 'moderate', 'heavy']),
 });
 
 const deliveryRequestSchema = z.object({
@@ -59,37 +68,112 @@ const deliveryRequestSchema = z.object({
     upiId: z.string().min(3, "Required"),
 });
 
+const transitSchema = z.object({
+  stop: z.string(),
+})
 
-function RideRequestForm({ onRequestRide, isSubmitting }: Pick<RidePanelProps, 'onRequestRide' | 'isSubmitting'>) {
-  const form = useForm<z.infer<typeof rideRequestSchema>>({
-    resolver: zodResolver(rideRequestSchema),
-    defaultValues: { destination: '', traffic: 'moderate' },
+const chartData = [
+  { time: "0", value: 10 },
+  { time: "1", value: 20 },
+  { time: "2", value: 15 },
+  { time: "3", value: 30 },
+  { time: "4", value: 25 },
+  { time: "5", value: 40 },
+  { time: "6", value: 35 },
+  { time: "7", value: 50 },
+  { time: "8", value: 45 },
+]
+
+const vehicleData = [
+  { vehicle: 'S1', type: 'Shuttle', eta: '7 min', icon: <Bus /> },
+  { vehicle: 'A1', type: 'Auto', eta: '3 min', icon: <Car /> },
+  { vehicle: 'A2', type: 'Auto', eta: '1 min', icon: <Car /> },
+]
+
+
+function TransitView() {
+  const form = useForm<z.infer<typeof transitSchema>>({
+    resolver: zodResolver(transitSchema),
+    defaultValues: { stop: "main-gate" },
   });
-
-  function onSubmit(data: z.infer<typeof rideRequestSchema>) {
-    onRequestRide(data);
-  }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form className="space-y-4">
         <FormField
           control={form.control}
-          name="destination"
+          name="stop"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Destination</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Silver Jubilee Tower" {...field} />
-              </FormControl>
-              <FormMessage />
+              <FormLabel>Your stop</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                  <SelectTrigger>
+                      <SelectValue placeholder="Select a stop" />
+                  </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="main-gate">Main Gate</SelectItem>
+                    <SelectItem value="sjt">SJT</SelectItem>
+                    <SelectItem value="tt">TT</SelectItem>
+                  </SelectContent>
+              </Select>
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Request Ride
-        </Button>
+
+        <div className="grid grid-cols-2 gap-4 items-start">
+          <div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Vehicle</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="text-right">ETA</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vehicleData.map((v) => (
+                  <TableRow key={v.vehicle}>
+                    <TableCell className="font-medium">{v.vehicle}</TableCell>
+                    <TableCell className="flex items-center gap-2 text-muted-foreground"><div className="w-6">{v.icon}</div>{v.type}</TableCell>
+                    <TableCell className="text-right">{v.eta}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <p className="text-xs text-muted-foreground mt-2">Live location updated every 0.5s. ETAs are estimated.</p>
+          </div>
+          
+          <div className="aspect-square h-[180px] w-full">
+              <ChartContainer config={{}} className="h-full w-full">
+                <AreaChart
+                  accessibilityLayer
+                  data={chartData}
+                  margin={{
+                    left: -20,
+                    right: 10,
+                    top: 5,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid vertical={false} strokeDasharray="4 4" className="stroke-border/50" />
+                  <XAxis dataKey="time" hide />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                  />
+                  <Area
+                    dataKey="value"
+                    type="natural"
+                    fill="hsl(var(--primary) / 0.1)"
+                    stroke="hsl(var(--primary))"
+                    stackId="a"
+                  />
+                </AreaChart>
+              </ChartContainer>
+          </div>
+        </div>
       </form>
     </Form>
   );
@@ -237,21 +321,21 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
     )
 }
 
-function RequestView(props: Pick<RidePanelProps, 'onRequestRide' | 'isSubmitting' | 'onRequestDelivery'>) {
+function RequestView(props: RidePanelProps) {
   return (
     <>
-      <CardHeader className="text-center">
+      <CardHeader className="text-center pb-4">
         <CardTitle className="font-headline text-2xl">Experience</CardTitle>
         <CardDescription>Live campus transit and student-to-student delivery.</CardDescription>
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
-        <Tabs defaultValue="delivery" className="w-full">
+        <Tabs value={props.activeTab} onValueChange={props.setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="transit"><Car className="mr-2" />Transit</TabsTrigger>
+                <TabsTrigger value="transit"><Bus className="mr-2" />Transit</TabsTrigger>
                 <TabsTrigger value="delivery"><PersonStanding className="mr-2" />Peer Delivery</TabsTrigger>
             </TabsList>
             <TabsContent value="transit" className="pt-4">
-                <RideRequestForm {...props} />
+                <TransitView />
             </TabsContent>
             <TabsContent value="delivery" className="pt-4">
                 <DeliveryRequestForm {...props} />
@@ -280,8 +364,11 @@ function SearchingView({ onCancel }: Pick<RidePanelProps, 'onCancel'>) {
   );
 }
 
-function ProviderEnRouteView({ provider, onCancel }: Pick<RidePanelProps, 'provider' | 'onCancel'>) {
+function ProviderEnRouteView({ provider, onCancel, activeTab }: Pick<RidePanelProps, 'provider' | 'onCancel' | 'activeTab'>) {
   if (!provider) return null;
+
+  const titleText = activeTab === 'transit' ? `${provider.name} is on the way` : `Your deliverer is on the way`;
+
   return (
     <>
         <CardHeader>
@@ -291,7 +378,7 @@ function ProviderEnRouteView({ provider, onCancel }: Pick<RidePanelProps, 'provi
                     <AvatarFallback>{provider.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
-                    <CardTitle className="font-headline text-xl">{provider.name} is on the way</CardTitle>
+                    <CardTitle className="font-headline text-xl">{titleText}</CardTitle>
                     <div className="flex items-center text-sm text-muted-foreground">
                         <Star className="w-4 h-4 mr-1 text-yellow-400 fill-yellow-400" /> {provider.rating}
                     </div>
@@ -299,8 +386,12 @@ function ProviderEnRouteView({ provider, onCancel }: Pick<RidePanelProps, 'provi
             </div>
         </CardHeader>
         <CardContent className="text-center">
-            <p className="text-lg font-medium">{provider.vehicle}</p>
-            <p className="text-sm px-4 py-1 bg-secondary rounded-md inline-block mt-1 font-mono tracking-widest">{provider.licensePlate}</p>
+             {activeTab === 'transit' && (
+                <>
+                    <p className="text-lg font-medium">{provider.vehicle}</p>
+                    <p className="text-sm px-4 py-1 bg-secondary rounded-md inline-block mt-1 font-mono tracking-widest">{provider.licensePlate}</p>
+                </>
+            )}
             <p className="text-muted-foreground mt-2">Arriving in approximately 5 minutes.</p>
         </CardContent>
         <CardFooter>
@@ -310,13 +401,14 @@ function ProviderEnRouteView({ provider, onCancel }: Pick<RidePanelProps, 'provi
   )
 }
 
-function InProgressView({ destination, eta }: Pick<RidePanelProps, 'destination' | 'eta'>) {
+function InProgressView({ destination, eta, activeTab }: Pick<RidePanelProps, 'destination' | 'eta' | 'activeTab'>) {
+    const titleText = activeTab === 'transit' ? `En route to ${destination}` : `Delivering to ${destination}`;
     return (
         <>
             <CardHeader className="items-center text-center">
                 <div className="flex items-center gap-2">
                     <MapPin className="w-6 h-6 text-primary" />
-                    <CardTitle className="font-headline text-xl">En route to {destination}</CardTitle>
+                    <CardTitle className="font-headline text-xl">{titleText}</CardTitle>
                 </div>
             </CardHeader>
             <CardContent className="text-center">
@@ -328,16 +420,19 @@ function InProgressView({ destination, eta }: Pick<RidePanelProps, 'destination'
     )
 }
 
-function CompletedView({ onReset }: Pick<RidePanelProps, 'onReset'>) {
+function CompletedView({ onReset, activeTab }: Pick<RidePanelProps, 'onReset' | 'activeTab'>) {
+    const titleText = activeTab === 'transit' ? "You've Arrived!" : "Delivery Complete!";
+    const descriptionText = activeTab === 'transit' ? "We hope you had a pleasant journey." : "Enjoy your meal!";
+
     return (
         <>
             <CardHeader className="items-center text-center">
                 <CheckCircle className="w-12 h-12 text-green-500" />
-                <CardTitle className="font-headline mt-4">You've Arrived!</CardTitle>
+                <CardTitle className="font-headline mt-4">{titleText}</CardTitle>
                 <CardDescription>Thank you for using VITransit.</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-                 <p className="text-sm text-muted-foreground">We hope you had a pleasant journey.</p>
+                 <p className="text-sm text-muted-foreground">{descriptionText}</p>
             </CardContent>
             <CardFooter>
                 <Button className="w-full" onClick={onReset}>New Request</Button>
@@ -348,7 +443,7 @@ function CompletedView({ onReset }: Pick<RidePanelProps, 'onReset'>) {
 
 export function RidePanel(props: RidePanelProps) {
   return (
-    <Card className="w-full max-w-md mx-auto shadow-2xl rounded-xl">
+    <Card className="w-full max-w-lg mx-auto shadow-2xl rounded-xl">
         {props.serviceState === 'IDLE' && <RequestView {...props} />}
         {props.serviceState === 'SEARCHING' && <SearchingView {...props} />}
         {props.serviceState === 'PROVIDER_EN_ROUTE' && <ProviderEnRouteView {...props} />}

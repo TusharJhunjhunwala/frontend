@@ -1,4 +1,4 @@
-import { CarIcon } from "@/components/icons/car-icon";
+import { Bus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
 
@@ -8,13 +8,11 @@ export function AppHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="p-2 rounded-lg bg-primary/90 shadow-md group-hover:bg-primary transition-colors">
-                <div className="w-6 h-6 flex items-center justify-center rounded-md bg-primary text-primary-foreground">
-                  <span className="text-sm font-bold">VT</span>
-                </div>
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="p-2.5 rounded-lg bg-primary text-primary-foreground shadow-md group-hover:bg-primary/90 transition-colors">
+                  <Bus className="w-5 h-5" />
               </div>
-              <span className="hidden sm:inline-block text-xl font-bold tracking-tighter text-foreground font-headline">
+              <span className="text-xl font-bold tracking-tight text-foreground font-headline">
                 VITransit
               </span>
             </Link>
