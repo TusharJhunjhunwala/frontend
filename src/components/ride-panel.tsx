@@ -449,7 +449,7 @@ function InProgressView({ destination, eta, activeTab }: Pick<RidePanelProps, 'd
 
 function CompletedView({ onReset, activeTab }: Pick<RidePanelProps, 'onReset' | 'activeTab'>) {
     const titleText = activeTab === 'transit' ? "You've Arrived!" : "Delivery Complete!";
-    const descriptionText = activeTab === 'transit' ? "We hope you had a pleasant journey." : "Enjoy your meal!";
+    const descriptionText = active-tab === 'transit' ? "We hope you had a pleasant journey." : "Enjoy your meal!";
 
     return (
         <>
