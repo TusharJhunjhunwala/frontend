@@ -11,8 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, PersonStanding } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
-import { getDeliveryRequests } from '@/ai/flows/get-delivery-requests';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export type ServiceState = 'IDLE' | 'SEARCHING' | 'PROVIDER_EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED';
@@ -54,6 +53,39 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('transit');
   const [currentDeliveryId, setCurrentDeliveryId] = useState<string | null>(null);
   const [showStatusScreen, setShowStatusScreen] = useState(false);
+  const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
+  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(true);
+
+  // Real-time listener for open delivery requests
+  useEffect(() => {
+    setIsFetchingDeliveries(true);
+    const q = query(collection(db, "deliveryRequests"), where("status", "==", "SEARCHING"));
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const requests: DeliveryRequest[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        requests.push({
+          id: doc.id,
+          pickupPoint: data.pickupPoint,
+          item: data.item,
+          deliverTo: data.deliverTo,
+          offerFee: data.offerFee,
+          paymentMethod: data.paymentMethod,
+          status: data.status,
+          createdAt: data.createdAt,
+        });
+      });
+      setDeliveryRequests(requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setIsFetchingDeliveries(false);
+    }, (error) => {
+        console.error("Error fetching real-time delivery requests: ", error);
+        setIsFetchingDeliveries(false);
+    });
+
+    // Cleanup subscription on component unmount
+    return () => unsubscribe();
+  }, []);
 
 
   useEffect(() => {
@@ -206,6 +238,8 @@ export default function Home() {
               setActiveTab={setActiveTab}
               showStatusScreen={showStatusScreen}
               setShowStatusScreen={setShowStatusScreen}
+              deliveryRequests={deliveryRequests}
+              isFetchingDeliveries={isFetchingDeliveries}
             />
           </div>
         </div>

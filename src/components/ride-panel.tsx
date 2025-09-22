@@ -38,7 +38,7 @@ import { useState, useEffect } from 'react';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 type RidePanelProps = {
@@ -55,6 +55,8 @@ type RidePanelProps = {
   setActiveTab: (tab: string) => void;
   showStatusScreen: boolean;
   setShowStatusScreen: (show: boolean) => void;
+  deliveryRequests: DeliveryRequest[];
+  isFetchingDeliveries: boolean;
 };
 
 const rideRequestSchema = z.object({
@@ -298,53 +300,30 @@ function AgentAcceptedView({ onComplete }: { onComplete: () => void }) {
 }
 
 
-function AgentView() {
+function AgentView({ deliveryRequests, isFetchingDeliveries }: Pick<RidePanelProps, 'deliveryRequests' | 'isFetchingDeliveries'>) {
   const [isOnline, setIsOnline] = useState(false);
   const [acceptedJob, setAcceptedJob] = useState<DeliveryRequest | null>(null);
-  const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
-  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false);
 
-  useEffect(() => {
-    if (!isOnline) {
-      setDeliveryRequests([]);
-      return;
+  const handleAcceptJob = async (req: DeliveryRequest) => {
+    try {
+      const deliveryRef = doc(db, 'deliveryRequests', req.id);
+      await updateDoc(deliveryRef, { status: 'AGENT_ASSIGNED' });
+      setAcceptedJob(req);
+    } catch (error) {
+        console.error("Error accepting job: ", error);
+        // Optionally, show a toast to the agent
     }
-
-    setIsFetchingDeliveries(true);
-    const q = query(collection(db, "deliveryRequests"), where("status", "==", "SEARCHING"));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const requests: DeliveryRequest[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        requests.push({
-          id: doc.id,
-          pickupPoint: data.pickupPoint,
-          item: data.item,
-          deliverTo: data.deliverTo,
-          offerFee: data.offerFee,
-          paymentMethod: data.paymentMethod,
-          status: data.status,
-          createdAt: data.createdAt, // Assuming createdAt is stored as an ISO string
-        });
-      });
-      setDeliveryRequests(requests);
-      setIsFetchingDeliveries(false);
-    }, (error) => {
-        console.error("Error fetching real-time delivery requests: ", error);
-        setIsFetchingDeliveries(false);
-    });
-
-    // Cleanup subscription on component unmount
-    return () => unsubscribe();
-  }, [isOnline]);
-
-  const handleAcceptJob = (req: DeliveryRequest) => {
-    setAcceptedJob(req);
   }
   
-  const handleCompleteJob = () => {
-    setAcceptedJob(null);
+  const handleCompleteJob = async () => {
+    if (!acceptedJob) return;
+    try {
+      const deliveryRef = doc(db, 'deliveryRequests', acceptedJob.id);
+      await updateDoc(deliveryRef, { status: 'COMPLETED' });
+      setAcceptedJob(null);
+    } catch (error) {
+        console.error("Error completing job: ", error);
+    }
   }
 
   if (acceptedJob) {
@@ -397,7 +376,7 @@ function AgentView() {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold">Open Delivery Requests</h3>
-            {isFetchingDeliveries && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isFetchingDeliveries && deliveryRequests.length === 0 && <Loader2 className="h-4 w-4 animate-spin" />}
           </div>
           {isFetchingDeliveries && deliveryRequests.length === 0 ? (
             <div className="text-center py-8">
@@ -463,7 +442,7 @@ function DeliveryView(props: RidePanelProps) {
         )}
       </TabsContent>
       <TabsContent value="agent" className="pt-4">
-        <AgentView />
+        <AgentView {...props} />
       </TabsContent>
     </Tabs>
   );
