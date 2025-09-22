@@ -38,7 +38,7 @@ import { useState, useEffect } from 'react';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
-import { doc, updateDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -59,6 +59,8 @@ type RidePanelProps = {
   setShowStatusScreen: (show: boolean) => void;
   isAgentOnline: boolean;
   setIsAgentOnline: (isOnline: boolean) => void;
+  deliveryRequests: DeliveryRequest[];
+  isFetchingDeliveries: boolean;
 };
 
 const rideRequestSchema = z.object({
@@ -302,51 +304,9 @@ function AgentAcceptedView({ onComplete, request }: { onComplete: () => void, re
 }
 
 
-function AgentView({ isAgentOnline, setIsAgentOnline }: Pick<RidePanelProps, 'isAgentOnline' | 'setIsAgentOnline'>) {
+function AgentView({ isAgentOnline, setIsAgentOnline, deliveryRequests, isFetchingDeliveries }: Pick<RidePanelProps, 'isAgentOnline' | 'setIsAgentOnline' | 'deliveryRequests' | 'isFetchingDeliveries'>) {
   const [acceptedJob, setAcceptedJob] = useState<DeliveryRequest | null>(null);
-  const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
-  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (!isAgentOnline) {
-      setDeliveryRequests([]);
-      return;
-    }
-
-    setIsFetchingDeliveries(true);
-    const q = query(collection(db, "deliveryRequests"), where("status", "==", "SEARCHING"));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const requests: DeliveryRequest[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        requests.push({
-          id: doc.id,
-          pickupPoint: data.pickupPoint,
-          item: data.item,
-          deliverTo: data.deliverTo,
-          offerFee: data.offerFee,
-          paymentMethod: data.paymentMethod,
-          status: data.status,
-          createdAt: data.createdAt,
-        });
-      });
-      setDeliveryRequests(requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setIsFetchingDeliveries(false);
-    }, (error) => {
-        console.error("Error fetching real-time delivery requests: ", error);
-        toast({
-          variant: 'destructive',
-          title: 'Real-time Error',
-          description: 'Could not fetch delivery updates.',
-        });
-        setIsFetchingDeliveries(false);
-    });
-
-    return () => unsubscribe();
-  }, [isAgentOnline, toast]);
-
 
   const handleAcceptJob = async (req: DeliveryRequest) => {
     try {
