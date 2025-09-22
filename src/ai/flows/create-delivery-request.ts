@@ -15,10 +15,10 @@ import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const CreateDeliveryRequestInputSchema = z.object({
-  pickupPoint: z.string(),
-  item: z.string(),
-  deliverTo: z.string(),
-  offerFee: z.string(),
+  pickupPoint: z.string().describe('The location where the item should be picked up.'),
+  item: z.string().describe('The item to be delivered.'),
+  deliverTo: z.string().describe('The final delivery destination.'),
+  offerFee: z.string().describe('The fee offered for the delivery.'),
 });
 export type CreateDeliveryRequestInput = z.infer<typeof CreateDeliveryRequestInputSchema>;
 
@@ -39,23 +39,26 @@ const createDeliveryRequestFlow = ai.defineFlow(
     outputSchema: CreateDeliveryRequestOutputSchema,
   },
   async (input) => {
+    // 1. Save the delivery request to Firestore with 'SEARCHING' status.
     const deliveryRequestRef = await addDoc(collection(db, 'deliveryRequests'), {
-        restaurant: input.pickupPoint, // Map pickupPoint to restaurant for db
+        restaurant: input.pickupPoint, // The schema uses 'restaurant' for pickupPoint
         item: input.item,
         deliverTo: input.deliverTo,
         offerFee: input.offerFee,
-        paymentMethod: 'cod', // Always pay on delivery
+        paymentMethod: 'cod', // Always 'cod' as requested
         status: 'SEARCHING',
         createdAt: new Date().toISOString(),
     });
 
+    // 2. Predict the ETA for the delivery.
     const etaInput: PredictDeliveryETAInput = {
         restaurantLocation: input.pickupPoint,
         dropOffLocation: input.deliverTo,
-        trafficConditions: 'moderate',
+        trafficConditions: 'moderate', // Assuming moderate traffic for now
     };
     const etaResult = await predictDeliveryETA(etaInput);
 
+    // 3. Return the ETA and the new delivery ID to the frontend.
     return {
       estimatedDeliveryTime: etaResult.estimatedDeliveryTime,
       deliveryId: deliveryRequestRef.id,

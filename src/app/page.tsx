@@ -56,6 +56,8 @@ export default function Home() {
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (serviceState === 'SEARCHING') {
+      // In a real app, you'd be listening for a real agent to accept.
+      // We simulate an agent accepting after 4 seconds.
       timer = setTimeout(() => {
         setProvider(MOCK_PROVIDER);
         setServiceState('PROVIDER_EN_ROUTE');
@@ -66,6 +68,7 @@ export default function Home() {
       }, 8000);
     } else if (serviceState === 'IN_PROGRESS') {
       const etaMinutes = eta ? parseInt(eta, 10) : 10;
+      // Simulate completion based on ETA
       timer = setTimeout(() => {
         setServiceState('COMPLETED');
       }, etaMinutes * 1000 * 0.5 + 5000);
@@ -95,11 +98,12 @@ export default function Home() {
   
   const handleRequestDelivery = async (data: DeliveryRequestData) => {
     setIsSubmitting(true);
-    setDestination(data.deliverTo);
+    setDestination(data.deliverTo); // Set destination for the UI status
     try {
       const result = await createDeliveryRequest(data);
       setEta(result.estimatedDeliveryTime);
-      setServiceState('SEARCHING');
+      // This state change will show the "waiting for agent" view.
+      setServiceState('SEARCHING'); 
     } catch (error) {
       console.error(error);
       toast({
@@ -212,5 +216,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
