@@ -111,13 +111,13 @@ export default function Home() {
         title: 'Error Requesting Delivery',
         description: 'Could not save your request. Please try again.',
       });
-      setDestination('');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleFetchDeliveries = async () => {
+    if (activeTab !== 'delivery') return;
     setIsFetchingDeliveries(true);
     try {
         const result = await getDeliveryRequests();
