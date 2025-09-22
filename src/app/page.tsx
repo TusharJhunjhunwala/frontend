@@ -55,11 +55,10 @@ export default function Home() {
   const [showStatusScreen, setShowStatusScreen] = useState(false);
   const [isAgentOnline, setIsAgentOnline] = useState(false);
   const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
-  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false);
+  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(true);
 
   // Centralized real-time listener for all open delivery requests
   useEffect(() => {
-    setIsFetchingDeliveries(true);
     const q = query(collection(db, "deliveryRequests"), where("status", "==", "SEARCHING"));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -78,7 +77,7 @@ export default function Home() {
         });
       });
       setDeliveryRequests(requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setIsFetchingDeliveries(false);
+      setIsFetchingDeliveries(false); // Correctly placed inside the callback
     }, (error) => {
         console.error("Error fetching real-time delivery requests: ", error);
         toast({
