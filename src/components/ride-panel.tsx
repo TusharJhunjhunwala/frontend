@@ -435,9 +435,9 @@ function DeliveryView(props: RidePanelProps) {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="request" className="pt-4">
-        {props.serviceState === 'SEARCHING' || props.serviceState === 'PROVIDER_EN_ROUTE' ? (
+        {props.serviceState === 'SEARCHING' && props.activeTab === 'delivery' && !props.showStatusScreen ? (
           <div className="text-center space-y-4 py-4">
-            <p className="text-muted-foreground">Your delivery request is being processed.</p>
+            <p className="text-muted-foreground">Searching for a deliverer...</p>
             <Button onClick={() => props.setShowStatusScreen(true)}>
               View Status
             </Button>
@@ -596,7 +596,7 @@ export function RidePanel(props: RidePanelProps) {
   const { serviceState, provider, destination, eta, onCancel, onReset, activeTab, showStatusScreen, setShowStatusScreen } = props;
 
   const renderContent = () => {
-    if (!showStatusScreen && serviceState === 'IDLE') {
+    if (!showStatusScreen && (serviceState === 'IDLE' || (serviceState === 'SEARCHING' && activeTab === 'delivery'))) {
        return <RequestView {...props} />;
     }
     
