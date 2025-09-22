@@ -132,7 +132,8 @@ export default function Home() {
     try {
       const result = await createDeliveryRequest(data);
       setCurrentDeliveryId(result.deliveryId);
-      // Now we wait for the Firestore listener to update the state
+      // Refresh the delivery list for the agent view in the background.
+      handleFetchDeliveries();
     } catch (error) {
       console.error(error);
       toast({
@@ -146,7 +147,6 @@ export default function Home() {
   };
 
   const handleFetchDeliveries = async () => {
-    if (activeTab !== 'delivery') return;
     setIsFetchingDeliveries(true);
     try {
         const result = await getDeliveryRequests();
