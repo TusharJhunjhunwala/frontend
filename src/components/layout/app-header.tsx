@@ -1,4 +1,4 @@
-import { Bus } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { AgentRegistrationForm } from "./agent-registration-form";
@@ -11,9 +11,14 @@ export function AppHeader() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="p-2.5 rounded-lg bg-primary text-primary-foreground shadow-md group-hover:bg-primary/90 transition-colors">
-                  <Bus className="w-5 h-5" />
-              </div>
+              <Image 
+                src="https://picsum.photos/seed/logo/40/40" 
+                alt="VITransit Logo"
+                width={40}
+                height={40}
+                className="rounded-lg shadow-md"
+                data-ai-hint="logo abstract"
+              />
               <span className="text-xl font-bold tracking-tight text-foreground font-headline">
                 VITransit
               </span>
