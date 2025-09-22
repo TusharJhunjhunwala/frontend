@@ -21,7 +21,7 @@ const CreateDeliveryRequestInputSchema = z.object({
   offerFee: z.string(),
   maxExtra: z.string(),
   paymentMethod: z.enum(['upi', 'cod']),
-  upiId: z.string(),
+  upiId: z.string().optional(),
 });
 export type CreateDeliveryRequestInput = z.infer<typeof CreateDeliveryRequestInputSchema>;
 

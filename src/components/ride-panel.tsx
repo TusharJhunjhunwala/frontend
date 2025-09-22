@@ -66,7 +66,10 @@ const deliveryRequestSchema = z.object({
     offerFee: z.string().min(1, "Required"),
     maxExtra: z.string().min(1, "Required"),
     paymentMethod: z.enum(["upi", "cod"]),
-    upiId: z.string().min(3, "Required"),
+    upiId: z.string().optional(),
+}).refine((data) => data.paymentMethod === 'cod' || (data.paymentMethod === 'upi' && data.upiId && data.upiId.length > 0), {
+    message: "UPI ID is required for UPI payments",
+    path: ["upiId"],
 });
 
 const transitSchema = z.object({
@@ -177,6 +180,8 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
         resolver: zodResolver(deliveryRequestSchema),
         defaultValues: { restaurant: 'Foodys', item: 'Paneer Roll', deliverTo: 'MH Block', offerFee: '20', maxExtra: '30', paymentMethod: 'upi', upiId: 'you@upi' },
     });
+
+    const paymentMethod = form.watch('paymentMethod');
 
     function onSubmit(data: z.infer<typeof deliveryRequestSchema>) {
         onRequestDelivery(data);
@@ -292,7 +297,7 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                             <FormItem>
                                 <FormLabel>Your UPI ID</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="you@upi" {...field} />
+                                    <Input placeholder="you@upi" {...field} disabled={paymentMethod === 'cod'} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
