@@ -21,7 +21,7 @@ const DeliveryRequestSchema = z.object({
   offerFee: z.string(),
   maxExtra: z.string(),
   paymentMethod: z.enum(['upi', 'cod']),
-  upiId: z.string(),
+  upiId: z.string().optional(),
   status: z.string(),
   createdAt: z.string(),
 });
