@@ -12,6 +12,8 @@ import { Clock, MapPin, PersonStanding } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
 import { getDeliveryRequests } from '@/ai/flows/get-delivery-requests';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export type ServiceState = 'IDLE' | 'SEARCHING' | 'PROVIDER_EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED';
 
@@ -52,29 +54,49 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('transit');
   const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
   const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false);
+  const [currentDeliveryId, setCurrentDeliveryId] = useState<string | null>(null);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (serviceState === 'SEARCHING') {
-      // In a real app, you'd be listening for a real agent to accept.
-      // We simulate an agent accepting after 4 seconds.
-      timer = setTimeout(() => {
-        setProvider(MOCK_PROVIDER);
-        setServiceState('PROVIDER_EN_ROUTE');
-      }, 4000);
-    } else if (serviceState === 'PROVIDER_EN_ROUTE') {
-      timer = setTimeout(() => {
-        setServiceState('IN_PROGRESS');
-      }, 8000);
-    } else if (serviceState === 'IN_PROGRESS') {
-      const etaMinutes = eta ? parseInt(eta, 10) : 10;
-      // Simulate completion based on ETA
-      timer = setTimeout(() => {
-        setServiceState('COMPLETED');
-      }, etaMinutes * 1000 * 0.5 + 5000);
+    // Only simulate ride-hailing flow for transit, not delivery
+    if (activeTab === 'transit') {
+      if (serviceState === 'SEARCHING') {
+        // Simulate an agent accepting after 4 seconds for rides.
+        timer = setTimeout(() => {
+          setProvider(MOCK_PROVIDER);
+          setServiceState('PROVIDER_EN_ROUTE');
+        }, 4000);
+      } else if (serviceState === 'PROVIDER_EN_ROUTE') {
+        timer = setTimeout(() => {
+          setServiceState('IN_PROGRESS');
+        }, 8000);
+      } else if (serviceState === 'IN_PROGRESS') {
+        const etaMinutes = eta ? parseInt(eta, 10) : 10;
+        // Simulate completion based on ETA
+        timer = setTimeout(() => {
+          setServiceState('COMPLETED');
+        }, etaMinutes * 1000 * 0.5 + 5000);
+      }
     }
     return () => clearTimeout(timer);
-  }, [serviceState, eta]);
+  }, [serviceState, eta, activeTab]);
+
+  // Firestore listener for delivery status
+  useEffect(() => {
+    if (currentDeliveryId && serviceState === 'SEARCHING') {
+      const unsub = onSnapshot(doc(db, "deliveryRequests", currentDeliveryId), (doc) => {
+        const data = doc.data();
+        if (data && data.status === 'AGENT_ASSIGNED') {
+          // A real provider object would come from the agent who accepted.
+          setProvider(MOCK_PROVIDER); 
+          setServiceState('PROVIDER_EN_ROUTE');
+        }
+      });
+      // Cleanup listener on component unmount or when delivery is complete/cancelled
+      return () => unsub();
+    }
+  }, [currentDeliveryId, serviceState]);
+
 
   const handleRequestRide = async (data: RideRequestData) => {
     setIsSubmitting(true);
@@ -99,13 +121,14 @@ export default function Home() {
   const handleRequestDelivery = async (data: DeliveryRequestData) => {
     // Immediately set the state to searching to show the waiting screen
     setDestination(data.deliverTo);
-    setEta("~15-20");
+    setEta("~15-20"); // Set a placeholder ETA
     setServiceState('SEARCHING'); 
 
     // Then, run the backend call in the background.
     try {
-      await createDeliveryRequest(data);
-      // No need to set state again, it's already 'SEARCHING'
+      const result = await createDeliveryRequest(data);
+      setCurrentDeliveryId(result.deliveryId);
+      // Now we wait for the Firestore listener to update the state
     } catch (error) {
       console.error(error);
       toast({
@@ -144,6 +167,7 @@ export default function Home() {
     setDestination('');
     setEta(null);
     setProvider(null);
+    setCurrentDeliveryId(null);
   };
   
   const handleReset = () => {
@@ -220,3 +244,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
