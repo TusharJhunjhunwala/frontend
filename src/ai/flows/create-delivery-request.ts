@@ -39,7 +39,7 @@ const createDeliveryRequestFlow = ai.defineFlow(
   async (input) => {
     // 1. Save the delivery request to Firestore with 'SEARCHING' status.
     const deliveryRequestRef = await addDoc(collection(db, 'deliveryRequests'), {
-        restaurant: input.pickupPoint, // Use 'restaurant' to match getDeliveryRequests flow
+        pickupPoint: input.pickupPoint,
         item: input.item,
         deliverTo: input.deliverTo,
         offerFee: input.offerFee,

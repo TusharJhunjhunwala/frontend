@@ -319,7 +319,7 @@ function AgentView() {
         const data = doc.data();
         requests.push({
           id: doc.id,
-          restaurant: data.restaurant,
+          pickupPoint: data.pickupPoint,
           item: data.item,
           deliverTo: data.deliverTo,
           offerFee: data.offerFee,
@@ -410,7 +410,7 @@ function AgentView() {
                 <Card key={req.id}>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">{req.item}</CardTitle>
-                    <CardDescription>From: {req.restaurant} | To: {req.deliverTo}</CardDescription>
+                    <CardDescription>From: {req.pickupPoint} | To: {req.deliverTo}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex justify-between items-center text-sm">
                     <div>
@@ -638,5 +638,3 @@ export function RidePanel(props: RidePanelProps) {
 
   return <Card className="w-full max-w-md mx-auto shadow-2xl">{renderContent()}</Card>;
 }
-
-    

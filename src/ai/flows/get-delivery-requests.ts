@@ -15,7 +15,7 @@ import { db } from '@/lib/firebase';
 
 const DeliveryRequestSchema = z.object({
   id: z.string(),
-  restaurant: z.string(),
+  pickupPoint: z.string(),
   item: z.string(),
   deliverTo: z.string(),
   offerFee: z.string(),
@@ -50,7 +50,7 @@ const getDeliveryRequestsFlow = ai.defineFlow(
       const createdAt = data.createdAt; 
       requests.push({
         id: doc.id,
-        restaurant: data.restaurant,
+        pickupPoint: data.pickupPoint,
         item: data.item,
         deliverTo: data.deliverTo,
         offerFee: data.offerFee,
