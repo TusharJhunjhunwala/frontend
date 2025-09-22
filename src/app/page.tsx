@@ -100,8 +100,9 @@ export default function Home() {
     setIsSubmitting(true);
     setDestination(data.deliverTo); // Set destination for the UI status
     try {
-      const result = await createDeliveryRequest(data);
-      setEta(result.estimatedDeliveryTime);
+      await createDeliveryRequest(data);
+      // Set a placeholder ETA, as the backend no longer provides it immediately.
+      setEta("~15-20");
       // This state change will show the "waiting for agent" view.
       setServiceState('SEARCHING'); 
     } catch (error) {

@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview A flow to create a delivery request and predict the ETA.
+ * @fileOverview A flow to create a delivery request.
  *
  * - createDeliveryRequest - A function that creates a delivery request.
  * - CreateDeliveryRequestInput - The input type for the createDeliveryRequest function.
@@ -9,7 +9,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {predictDeliveryETA, PredictDeliveryETAInput} from './predict-delivery-eta';
 import {z} from 'genkit';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -23,7 +22,6 @@ const CreateDeliveryRequestInputSchema = z.object({
 export type CreateDeliveryRequestInput = z.infer<typeof CreateDeliveryRequestInputSchema>;
 
 const CreateDeliveryRequestOutputSchema = z.object({
-  estimatedDeliveryTime: z.string(),
   deliveryId: z.string(),
 });
 export type CreateDeliveryRequestOutput = z.infer<typeof CreateDeliveryRequestOutputSchema>;
@@ -50,17 +48,8 @@ const createDeliveryRequestFlow = ai.defineFlow(
         createdAt: new Date().toISOString(), // Save as ISO string
     });
 
-    // 2. Predict the ETA for the delivery.
-    const etaInput: PredictDeliveryETAInput = {
-        restaurantLocation: input.pickupPoint,
-        dropOffLocation: input.deliverTo,
-        trafficConditions: 'moderate', // Assuming moderate traffic for now
-    };
-    const etaResult = await predictDeliveryETA(etaInput);
-
-    // 3. Return the ETA and the new delivery ID to the frontend.
+    // 2. Return the new delivery ID to the frontend.
     return {
-      estimatedDeliveryTime: etaResult.estimatedDeliveryTime,
       deliveryId: deliveryRequestRef.id,
     };
   }
