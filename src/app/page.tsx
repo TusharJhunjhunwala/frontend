@@ -40,9 +40,7 @@ export type DeliveryRequestData = {
   item: string;
   deliverTo: string;
   offerFee: string;
-  maxExtra: string;
   paymentMethod: 'upi' | 'cod';
-  upiId: string;
 };
 
 export default function Home() {
@@ -215,3 +213,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

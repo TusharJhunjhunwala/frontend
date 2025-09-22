@@ -19,9 +19,7 @@ const CreateDeliveryRequestInputSchema = z.object({
   item: z.string(),
   deliverTo: z.string(),
   offerFee: z.string(),
-  maxExtra: z.string(),
   paymentMethod: z.enum(['upi', 'cod']),
-  upiId: z.string().optional(),
 });
 export type CreateDeliveryRequestInput = z.infer<typeof CreateDeliveryRequestInputSchema>;
 
@@ -44,6 +42,8 @@ const createDeliveryRequestFlow = ai.defineFlow(
   async (input) => {
     const deliveryRequestRef = await addDoc(collection(db, 'deliveryRequests'), {
         ...input,
+        maxExtra: '', // Default to empty string as it's removed from form
+        upiId: '', // Default to empty string as it's removed from form
         status: 'SEARCHING',
         createdAt: new Date().toISOString(),
     });
@@ -61,3 +61,5 @@ const createDeliveryRequestFlow = ai.defineFlow(
     };
   }
 );
+
+    

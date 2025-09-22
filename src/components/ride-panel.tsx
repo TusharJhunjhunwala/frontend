@@ -66,12 +66,7 @@ const deliveryRequestSchema = z.object({
     item: z.string().min(2, "Required"),
     deliverTo: z.string().min(3, "Required"),
     offerFee: z.string().min(1, "Required"),
-    maxExtra: z.string().min(1, "Required"),
     paymentMethod: z.enum(["upi", "cod"]),
-    upiId: z.string().optional(),
-}).refine((data) => data.paymentMethod === 'cod' || (data.paymentMethod === 'upi' && data.upiId && data.upiId.length > 0), {
-    message: "UPI ID is required for UPI payments",
-    path: ["upiId"],
 });
 
 const transitSchema = z.object({
@@ -180,13 +175,13 @@ function TransitView() {
 function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanelProps, 'onRequestDelivery' | 'isSubmitting'>) {
     const form = useForm<z.infer<typeof deliveryRequestSchema>>({
         resolver: zodResolver(deliveryRequestSchema),
-        defaultValues: { restaurant: 'Foodys', item: 'Paneer Roll', deliverTo: 'MH Block', offerFee: '20', maxExtra: '30', paymentMethod: 'upi', upiId: 'you@upi' },
+        defaultValues: { restaurant: 'Foodys', item: 'Paneer Roll', deliverTo: 'MH Block', offerFee: '20', paymentMethod: 'upi' },
     });
 
     const paymentMethod = form.watch('paymentMethod');
 
     function onSubmit(data: z.infer<typeof deliveryRequestSchema>) {
-        onRequestDelivery(data);
+        onRequestDelivery(data as DeliveryRequestData);
     }
     
     return (
@@ -242,34 +237,19 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                         </FormItem>
                     )}
                 />
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="offerFee"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Offer fee (₹)</FormLabel>
-                                <FormControl>
-                                    <Input type="text" placeholder="20" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="maxExtra"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Max extra (₹)</FormLabel>
-                                <FormControl>
-                                    <Input type="text" placeholder="30" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
+                <FormField
+                    control={form.control}
+                    name="offerFee"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Offer fee (₹)</FormLabel>
+                            <FormControl>
+                                <Input type="text" placeholder="20" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
                  <FormField
                   control={form.control}
                   name="paymentMethod"
@@ -291,21 +271,6 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
                     </FormItem>
                   )}
                 />
-                {paymentMethod === 'upi' && (
-                    <FormField
-                        control={form.control}
-                        name="upiId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Your UPI ID</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="you@upi" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                )}
                 <Button type="submit" className="w-full !mt-6" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Find a deliverer
@@ -576,3 +541,5 @@ export function RidePanel(props: RidePanelProps) {
     </Card>
   );
 }
+
+    

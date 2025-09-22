@@ -19,7 +19,7 @@ const DeliveryRequestSchema = z.object({
   item: z.string(),
   deliverTo: z.string(),
   offerFee: z.string(),
-  maxExtra: z.string(),
+  maxExtra: z.string().optional(),
   paymentMethod: z.enum(['upi', 'cod']),
   upiId: z.string().optional(),
   status: z.string(),
@@ -65,3 +65,5 @@ const getDeliveryRequestsFlow = ai.defineFlow(
     return { requests };
   }
 );
+
+    
