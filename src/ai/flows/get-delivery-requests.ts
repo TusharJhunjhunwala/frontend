@@ -46,6 +46,8 @@ const getDeliveryRequestsFlow = ai.defineFlow(
     const requests: DeliveryRequest[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
+      // Directly use the string from Firestore, assuming it's stored as ISO string.
+      const createdAt = typeof data.createdAt === 'string' ? data.createdAt : new Date(data.createdAt.seconds * 1000).toISOString();
       requests.push({
         id: doc.id,
         restaurant: data.restaurant,
@@ -54,7 +56,7 @@ const getDeliveryRequestsFlow = ai.defineFlow(
         offerFee: data.offerFee,
         paymentMethod: data.paymentMethod,
         status: data.status,
-        createdAt: data.createdAt,
+        createdAt: createdAt,
       });
     });
 
