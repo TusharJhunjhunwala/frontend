@@ -28,12 +28,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus } from 'lucide-react';
+import { Loader2, MapPin, Star, CheckCircle, Car, PersonStanding, Bus, PackageCheck, PackageSearch } from 'lucide-react';
 import type { ServiceState, Provider, RideRequestData, DeliveryRequestData } from '@/app/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { CampusMap } from './campus-map';
+import { useState } from 'react';
+import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
 
 
 type RidePanelProps = {
@@ -48,6 +50,9 @@ type RidePanelProps = {
   onReset: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  deliveryRequests: DeliveryRequest[];
+  isFetchingDeliveries: boolean;
+  onFetchDeliveries: () => void;
 };
 
 const rideRequestSchema = z.object({
@@ -309,6 +314,111 @@ function DeliveryRequestForm({ onRequestDelivery, isSubmitting }: Pick<RidePanel
     )
 }
 
+function AgentView({
+  onFetchDeliveries,
+  isFetchingDeliveries,
+  deliveryRequests,
+}: Pick<RidePanelProps, 'onFetchDeliveries' | 'isFetchingDeliveries' | 'deliveryRequests'>) {
+  const [isReady, setIsReady] = useState(false);
+
+  const handleReadyClick = () => {
+    onFetchDeliveries();
+    setIsReady(true);
+  };
+
+  if (!isReady) {
+    return (
+      <div className="text-center space-y-4 py-8">
+        <CardTitle>Become a Deliverer</CardTitle>
+        <CardDescription>
+          Ready to earn? Click the button below to see available delivery jobs
+          on campus.
+        </CardDescription>
+        <Button onClick={handleReadyClick} disabled={isFetchingDeliveries} size="lg">
+          {isFetchingDeliveries ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <PackageSearch className="mr-2" />
+          )}
+          I am ready to deliver
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="font-semibold">Open Delivery Requests</h3>
+        <Button variant="ghost" size="sm" onClick={onFetchDeliveries} disabled={isFetchingDeliveries}>
+           {isFetchingDeliveries ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
+        </Button>
+      </div>
+      {isFetchingDeliveries && deliveryRequests.length === 0 ? (
+         <div className="text-center py-8">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-muted-foreground mt-2">Looking for jobs...</p>
+         </div>
+      ) : deliveryRequests.length > 0 ? (
+        <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+          {deliveryRequests.map((req) => (
+            <Card key={req.id}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">
+                  {req.item}
+                </CardTitle>
+                <CardDescription>
+                  From: {req.restaurant} | To: {req.deliverTo}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-between items-center text-sm">
+                <div>
+                  <p>Fee: <span className="font-bold">₹{req.offerFee}</span></p>
+                  <p>Max Extra: <span className="font-bold">₹{req.maxExtra}</span></p>
+                </div>
+                <Button>Accept</Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8 border rounded-lg bg-muted/50">
+           <PackageCheck className="mx-auto h-8 w-8 text-muted-foreground" />
+           <p className="text-muted-foreground mt-2">No delivery requests right now.</p>
+           <p className="text-xs text-muted-foreground">Check back soon!</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+function DeliveryView(props: RidePanelProps) {
+  const [deliveryTab, setDeliveryTab] = useState('request');
+
+  return (
+    <Tabs value={deliveryTab} onValueChange={setDeliveryTab} className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="request">
+          <PackageSearch className="mr-2" />
+          Request
+        </TabsTrigger>
+        <TabsTrigger value="agent">
+          <PersonStanding className="mr-2" />
+          Agent
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="request" className="pt-4">
+        <DeliveryRequestForm {...props} />
+      </TabsContent>
+      <TabsContent value="agent" className="pt-4">
+        <AgentView {...props} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+
 function RequestView(props: RidePanelProps) {
   return (
     <>
@@ -326,7 +436,7 @@ function RequestView(props: RidePanelProps) {
                 <TransitView />
             </TabsContent>
             <TabsContent value="delivery" className="pt-4">
-                <DeliveryRequestForm {...props} />
+                <DeliveryView {...props} />
             </TabsContent>
         </Tabs>
       </CardContent>

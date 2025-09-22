@@ -10,6 +10,8 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, PersonStanding } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import type { DeliveryRequest } from '@/ai/flows/get-delivery-requests';
+import { getDeliveryRequests } from '@/ai/flows/get-delivery-requests';
 
 export type ServiceState = 'IDLE' | 'SEARCHING' | 'PROVIDER_EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED';
 
@@ -51,6 +53,8 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('transit');
+  const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
+  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -111,6 +115,24 @@ export default function Home() {
       setIsSubmitting(false);
     }
   };
+
+  const handleFetchDeliveries = async () => {
+    setIsFetchingDeliveries(true);
+    try {
+        const result = await getDeliveryRequests();
+        setDeliveryRequests(result.requests);
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: 'destructive',
+            title: 'Error Fetching Deliveries',
+            description: 'Could not fetch delivery requests. Please try again.',
+        });
+    } finally {
+        setIsFetchingDeliveries(false);
+    }
+  };
+
 
   const handleCancel = () => {
     setServiceState('IDLE');
@@ -174,6 +196,9 @@ export default function Home() {
               onReset={handleReset}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
+              deliveryRequests={deliveryRequests}
+              isFetchingDeliveries={isFetchingDeliveries}
+              onFetchDeliveries={handleFetchDeliveries}
             />
           </div>
         </div>
