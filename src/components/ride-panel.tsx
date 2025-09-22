@@ -305,14 +305,13 @@ function AgentAcceptedView({ onComplete, request }: { onComplete: () => void, re
 function AgentView({ isAgentOnline, setIsAgentOnline }: Pick<RidePanelProps, 'isAgentOnline' | 'setIsAgentOnline'>) {
   const [acceptedJob, setAcceptedJob] = useState<DeliveryRequest | null>(null);
   const [deliveryRequests, setDeliveryRequests] = useState<DeliveryRequest[]>([]);
-  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(true);
+  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (!isAgentOnline) {
       setDeliveryRequests([]);
-      setIsFetchingDeliveries(false);
-      return () => {};
+      return;
     }
 
     setIsFetchingDeliveries(true);
@@ -405,7 +404,7 @@ function AgentView({ isAgentOnline, setIsAgentOnline }: Pick<RidePanelProps, 'is
             <h3 className="font-semibold">Open Delivery Requests</h3>
             {isFetchingDeliveries && <Loader2 className="h-4 w-4 animate-spin" />}
           </div>
-          {isFetchingDeliveries && deliveryRequests.length === 0 ? (
+          {isFetchingDeliveries ? (
             <div className="text-center py-8">
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
               <p className="text-muted-foreground mt-2">Looking for jobs...</p>
